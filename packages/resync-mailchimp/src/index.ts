@@ -1,7 +1,10 @@
 import express from "express";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import { Pool } from "pg";
 import QueryStream from "pg-query-stream";
+import  es  from "event-stream";
+import  Queue  from "bull"; 
+
 //import * as url from "url";
 const url = require('url');
 const JSONStream = require('JSONStream');
@@ -22,6 +25,10 @@ const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3003;
 console.log(PORT);
+
+const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+const queueContacts = new Queue("contacts", REDIS_URL);
+
 app.post('/resync', async (req, res) => {
 
   // get request input
@@ -73,19 +80,20 @@ app.post('/resync', async (req, res) => {
     } 
   } 
   const query = new QueryStream(`select
-        a.id activist_id,a.email activist_email, 
-        a.first_name, a.last_name,
-        a.phone,a.city,a.state,      
-        w.id widget_id, 
-        w.kind widget_kind,
-        b.id as block_id,
-        m.id mobilization_id , 
-        m."name" mobilization_name,
-        c.id community_id, 
-        c."name" community_name, 
-        c.mailchimp_api_key , 
-        c.mailchimp_list_id ,
-        t.*
+        --a.id activist_id,
+        a.email activist_email, a.first_name
+        --, a.last_name,
+        --a.phone,a.city,a.state,      
+        --w.id widget_id, 
+        --w.kind widget_kind,
+        --b.id as block_id,
+        --m.id mobilization_id , 
+        --m."name" mobilization_name,
+        --c.id community_id, 
+        --c."name" community_name, 
+        --c.mailchimp_api_key , 
+        ---c.mailchimp_list_id ,
+        --t.*
         from
         activists a,${table} t 
           left join widgets w on t.widget_id = w.id
@@ -97,20 +105,35 @@ app.post('/resync', async (req, res) => {
         order by a.id asc 
      `);
   const stream =  client.query(query);
-  stream.on('end',() => {
-    console.log("fim")
+  stream.on('end',async () => {
+    console.log("fim", await queueContacts.getJob(await queueContacts.count())); 
+    return res.json("OK");
     
   }); 
-  stream.on('error', (err: any) => { console.log("AQUI",err)});
-  stream.on('data', (data:any) => {
-                                    let r = JSON.stringify(data); 
-                                    console.log({ r })
-                                  });
-  //stream.pipe(JSONStream.stringify()).pipe(process.stdout);
+  stream.on('error', (err: any) => { console.log("Erro",err)});
+ // stream.on('data', (data : any) => {
+  //  console.log(data);
+ // })  ;
+                                  
+  stream.pipe(JSONStream.stringify()).pipe(
+    es.map((data: any, callback:any) => { 
+      let add = async (data: any) => {
+        return await  queueContacts.add( { data }, {
+          removeOnComplete: true,
+        });
+      }
+      add(data)
+      .then((data) => {
+        callback(null, JSON.stringify(data));
+      })
+      .catch((err) => {
+        console.log(`ERROR ADD QUEUE: ${err}`);
+      });
+    }));
   
 });
-  // stream.pipe(JSONStream.stringify()).pipe(res);
-  return res.json("Ok");
+ 
+ // return res.json("OK");
 
 });
 
