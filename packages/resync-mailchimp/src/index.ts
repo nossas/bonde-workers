@@ -2,8 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import QueryStream from "pg-query-stream";
-import  es  from "event-stream";
-import  Queue  from "bull"; 
+import es  from "event-stream";
+import Queue  from "bull"; 
 
 //import * as url from "url";
 const url = require('url');
@@ -23,6 +23,7 @@ const config = {
 
 const app = express();
 app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
 console.log(`Porta: ${PORT}`);
 
@@ -36,9 +37,7 @@ app.post('/resync', async (req, res) => {
  
   //ae
   const pool = new Pool(config);
-  //ae
   const client = await pool.connect();
-  //ae
   const queryWidget = (iscommunity?`select w.id , 
                                            w.kind from 
                                            communities c , mobilizations m , blocks b , widgets w 
@@ -50,9 +49,7 @@ app.post('/resync', async (req, res) => {
                                            and w.kind in ('form','donation','pressure-phone','pressure')` 
                                     :`select id, kind from widgets where id = ${id}`);
 
-  //ae
-  const widgets = await pool.query(queryWidget).then((result) =>{return result.rows});  
-  
+  const widgets = await client.query(queryWidget).then((result) =>{return result.rows});
   widgets.forEach((w) => {                     
     let table;   
     switch(w.kind) { 
@@ -106,14 +103,9 @@ app.post('/resync', async (req, res) => {
     const stream =  client.query(query);
     stream.on('end',async () => {
       console.log("fim",await queueContacts.getJob(await queueContacts.count())); 
-      //wmc
-      return res.json({
-        queue: await queueContacts.getJobCounts()
-      });
-    
     }); 
     stream.on('error', (err: any) => { console.log("Erro",err)});
-                                  
+    //                              
     stream.pipe(JSONStream.stringify())
     .pipe(JSONStream.parse("*"))      
     .pipe(
@@ -136,6 +128,10 @@ app.post('/resync', async (req, res) => {
         });
     }));
   });
+
+  return res.json({
+    queue: "OK"
+  })
 });
 
 app.listen(PORT);
