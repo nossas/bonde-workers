@@ -21,17 +21,20 @@ const dbClient = async () => {
     const pool = new Pool(config);
     return await pool.connect();     
 }
+const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+const queueContacts = new Queue(`contacts-mailchimp`, REDIS_URL);
 
 export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
     
-    const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
-    const queueContacts = new Queue(`contacts-mailchimp`, REDIS_URL);
     let client: PoolClient;
     client = await dbClient(); 
 
     const queryWidget = (iscommunity?`select w.id , 
-    w.kind from 
-    communities c , mobilizations m , blocks b , widgets w 
+    w.kind
+    from widgets w 
+        left join blocks b on w.block_id = b.id
+        left join mobilizations m on b.mobilization_id = m.id
+        left join communities c on m.community_id = c.id
     where 
     c.id = ${id}
     and b.id = w.block_id  
@@ -45,12 +48,12 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
                                     return result.rows
                                  });
     //nf 
-    console.log(widgets.length);                            
-    widgets.forEach((w) => {                     
-        let table;   
+    let table: string;                           
+    widgets.forEach((w) => {
+
         switch(w.kind) { 
         case 'donation': { 
-            table = 'donations'; 
+            table = 'donations';
             break; 
         } 
         case 'form': { 
@@ -66,16 +69,18 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
             break;
         }        
         default: { 
-            table = 'form_entries'
+            table = 'form_entries';
             break; 
         } 
         } 
         //nf
         const query = new QueryStream(`select
-            a.id activist_id,
-            a.email activist_email, a.first_name
-            , a.last_name,
-            a.phone,a.city,a.state,      
+            a.first_name activist_first_name,
+            a.last_name activist_last_name, 
+            a.city activist_city, 
+            a.state activist_state, 
+            a.phone activist_phone,       
+            a.email activist_email,
             w.id widget_id, 
             w.kind widget_kind,
             b.id as block_id,
@@ -84,24 +89,23 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
             c.id community_id, 
             c."name" community_name, 
             c.mailchimp_api_key , 
-            c.mailchimp_list_id ,
-            t.*
+            c.mailchimp_list_id,
+            t.id
             from
-            activists a,${table} t 
+            ${table} t 
+            left join activists a on  a.id = t.activist_id
             left join widgets w on t.widget_id = w.id
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where a.id = t.activist_id  and w.id = ${w.id}
-            -- and fe.mailchimp_syncronization_at is null 
+            where w.id = ${w.id}
             order by a.id asc 
         `);
 
         const stream =  client.query(query);
 
         stream.on('end',async () => {
-            console.log("fim",await queueContacts.getJob(await queueContacts.count())); 
-            
+            console.log("fim",await queueContacts.getJob(await queueContacts.count()));
         }); 
         stream.on('error',(err: any) => { 
             console.log(err);
@@ -113,10 +117,23 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
         .pipe(
             es.map((data:any, callback:any) => { 
                 let add = async (data: any) => {
-                const contact = { 
-                            first_name: data.first_name, 
-                            email: data.activist_email 
-                          }
+                const contact = {
+                            id: data.id,
+                            first_name: data.activist_first_name,
+                            last_name: data.activist_last_name,
+                            email: data.activist_email,
+                            state: data.activist_state,
+                            city: data.activist_city,
+                            widget_id: data.widget_id,
+                            kind: data.kind,
+                            action: table,
+                            mobilization_id: data.mobilization_id,
+                            mobilization_name: data.mobilization_name,
+                            community_id: data.community_id,
+                            community_name: data.community_name,
+                            mailchimp_api_key: data.mailchimp_api_key,
+                            mailchimp_list_id: data.mailchimp_list_id
+                        }
                 return await queueContacts.add( { contact }, {
                                                 removeOnComplete: true,
                             });
