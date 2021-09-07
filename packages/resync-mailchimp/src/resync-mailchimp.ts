@@ -2,6 +2,7 @@ import QueryStream from "pg-query-stream";
 import es  from "event-stream";
 import Queue  from "bull"; 
 import { Pool,PoolClient } from "pg";
+import {startResyncMailchimp} from "./worker"
 const JSONStream = require('JSONStream');
 const url = require('url');
 
@@ -99,13 +100,17 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
             where w.id = ${w.id}
-            order by a.id asc 
+            order by t.id asc
         `);
 
         const stream =  client.query(query);
 
         stream.on('end',async () => {
-            console.log("fim",await queueContacts.getJob(await queueContacts.count()));
+            const total = await queueContacts.count();
+           // console.log(total);
+            console.log(`Queue Widget ${w.id}:`,await queueContacts.getJobCounts());
+           
+
         }); 
         stream.on('error',(err: any) => { 
             console.log(err);
@@ -125,7 +130,7 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
                             state: data.activist_state,
                             city: data.activist_city,
                             widget_id: data.widget_id,
-                            kind: data.kind,
+                            kind: data.widget_kind,
                             action: table,
                             mobilization_id: data.mobilization_id,
                             mobilization_name: data.mobilization_name,
@@ -133,7 +138,7 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
                             community_name: data.community_name,
                             mailchimp_api_key: data.mailchimp_api_key,
                             mailchimp_list_id: data.mailchimp_list_id
-                        }
+                        }        
                 return await queueContacts.add( { contact }, {
                                                 removeOnComplete: true,
                             });
@@ -148,5 +153,5 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
             })
         );
     });
- return queueContacts.toKey("id")
+    return queueContacts.toKey("id");
 }
