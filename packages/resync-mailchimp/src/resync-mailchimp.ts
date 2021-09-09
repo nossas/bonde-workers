@@ -1,12 +1,8 @@
 import QueryStream from "pg-query-stream";
 import es  from "event-stream";
-import Queue  from "bull"; 
-import { dbClient, contactQueue } from "./utils";
-import {startResyncMailchimp} from "./worker"
+import  { dbClient, queueContacts }  from "./utils";
 import { PoolClient } from "pg";
 const JSONStream = require('JSONStream');
-
-const queueContacts = contactQueue();
 
 export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
      
