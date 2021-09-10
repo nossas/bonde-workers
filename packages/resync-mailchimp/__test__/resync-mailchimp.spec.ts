@@ -1,18 +1,38 @@
 import { resyncMailchimpHandle } from "../src/resync-mailchimp"; 
+import pgmock, { getPool } from 'pgmock2';
+import Redis from "ioredis-mock";
+import Queue from "bull";
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
+
+const pg = new pgmock();
+const pool = getPool(pg);
+pg.add('select id, kind from widgets where id = 1234', ['string'], {
+  rowCount: 1,
+  rows: [
+      { id: 1234, kind: 'donation' }
+  ]
+});
 
 
-jest.resetModules(); // Most important - it clears the cache
-process.env.PORT = "3002";
-process.env.REDIS_URL = "redis://127.0.0.1:6379";
-process.env.DATABASE_URL= "postgres://monkey_user:monkey_pass@localhost:49153/bonde";
- 
+const utils = require('../src/utils');
+jest.mock('../src/utils');
+const redisMockClient = new Redis();
+const mockQueue = new Queue("contacts-mailchimp", { createClient: () => redisMockClient });
+const client =  pool.connect();
+utils.dbClient.mockResolvedValue( client );
+utils.queueContacts = mockQueue;
+
 describe("resyncMailchimpHandle", () => {
 
   it("should return id queue", async()=>{
     
-  });
-  
-  it("should return undefined", async()=>{
+    const spyonQuery = jest.spyOn(pg,"query" );
+    const id = await resyncMailchimpHandle(1234,false);
+    expect(id).toBe("bull:contacts-mailchimp:id");
+    expect(spyonQuery).toBeCalledWith('select id, kind from widgets where id = 1234;');
   
   });
 ;})
