@@ -18,8 +18,7 @@ export const dbClient = async () => {
     let client = await  pool.connect();  
     return client;   
 }
+
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
-
-export const queueContacts =  new Queue(`contacts-mailchimp`, REDIS_URL)
-
+export const queueContacts =  new Queue(`contacts-mailchimp`, REDIS_URL);
 

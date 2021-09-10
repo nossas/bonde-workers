@@ -5,7 +5,7 @@ import { PoolClient } from "pg";
 const JSONStream = require('JSONStream');
 
 export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
-     
+    
     let client: PoolClient = await dbClient(); 
     const queryWidget = (iscommunity?`select w.id , 
     w.kind
@@ -27,7 +27,7 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
                                  });
     //nf 
     let table: string;                           
-    widgets.forEach((w) => {
+    widgets.forEach(async (w) => {
 
         switch(w.kind) { 
         case 'donation': { 
@@ -84,10 +84,7 @@ export async function resyncMailchimpHandle (id: number, iscommunity: boolean) {
 
         stream.on('end',async () => {
             const total = await queueContacts.count();
-           // console.log(total);
             console.log(`Queue Widget ${w.id}:`,await queueContacts.getJobCounts());
-           
-
         }); 
         stream.on('error',(err: any) => { 
             console.log(err);

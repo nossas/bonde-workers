@@ -37,7 +37,7 @@ describe('mailchimp function tests', () => {
   }
 
   const contact_2: Contact = {
-    id: 345,
+    id: 346,
     email: 'email@email.org',
     first_name: 'Name',
     last_name: 'Sobrenome',
@@ -54,7 +54,7 @@ describe('mailchimp function tests', () => {
     mailchimp_api_key: 'xxx-us10',
     mailchimp_list_id: 'xxx'
   }
-
+  
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -103,11 +103,8 @@ describe('mailchimp function tests', () => {
       });
   });
 
-
   it('merge_fields city , phone, state', async () => {
     mockPut.mockResolvedValue({ last_changed: '' });
-
-
     const {mailchimp_api_key, mailchimp_list_id} = { ...contact }; 
     const expected = {
       path: `/lists/${mailchimp_list_id}/members/${hash(contact.email)}`,
