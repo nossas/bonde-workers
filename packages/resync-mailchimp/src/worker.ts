@@ -1,9 +1,11 @@
 import { queueContacts, dbClient } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
-
+import log, { apmAgent } from "./dbg";
 let workers = 1;
 export async function startResyncMailchimp() {
     const client = await dbClient();
+    console.log("teste",
+    await queueContacts.getJobCounts());
     queueContacts.process(1, async (job) => {
         try {
             await mailchimp(job.data.contact);
@@ -12,14 +14,17 @@ export async function startResyncMailchimp() {
                           mailchimp_syncronization_at = NOW()
                           where id = ${job.data.contact.id}`;
             await client.query(query).then((result) => {
-                console.log(job.data.contact.id)
+                log.info(`Contact updated id ${job.data.contact.id}`)
             }).catch((err) => {
-                console.log(err);
+                log.error(`${err}`);
+                apmAgent?.captureError(err);
             })
         }
         catch (err) {
-            console.log(err);
+            log.error(`${err}`);
+            apmAgent?.captureError(err);
         }
-        //atualizar mailchimp_syncronization_at mailchimp_syncronization_error_reason?
     });
 }
+
+startResyncMailchimp();

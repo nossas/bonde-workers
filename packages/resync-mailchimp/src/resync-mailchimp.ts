@@ -2,11 +2,24 @@ import QueryStream from "pg-query-stream";
 import es from "event-stream";
 import { dbClient, queueContacts } from "./utils";
 import { PoolClient } from "pg";
+import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
 export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
+    
+    apmAgent?.setCustomContext({
+        id,
+        iscommunity
+    });
 
-    let client: PoolClient = await dbClient();
+    let client: PoolClient; 
+    try{
+        client = await dbClient();
+    } catch (error) {
+        log.error(`${error}`);
+        apmAgent?.captureError(error);
+        throw new Error(`Database connection faleid`);
+    }
     const queryWidget = (iscommunity ? `select w.id , 
     w.kind
     from widgets w 
@@ -24,10 +37,13 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
     const widgets = await client.query(queryWidget)
         .then((result) => {
             return result.rows
+        }).catch(error => {
+            log.error(`Error: ${error}`);
+            apmAgent?.captureError(error);
         });
-    //nf 
+ 
     let table: string;
-    widgets.forEach(async (w) => {
+    widgets?.forEach(async (w) => {
 
         switch (w.kind) {
             case 'donation': {
@@ -46,13 +62,15 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
                 table = 'activist_pressures';
                 break;
             }
-            default: {
-                table = 'form_entries';
-                break;
-            }
         }
-        //nf
-        const query = new QueryStream(`select
+
+        if (!table){
+            log.error(`Kind of widget not found: ${ JSON.stringify(w)}`);
+        }
+        else {
+        
+            log.info(`Search contacts widget ${ JSON.stringify(w)}`);
+            const query = new QueryStream(`select
             a.first_name activist_first_name,
             a.last_name activist_last_name, 
             a.city activist_city, 
@@ -77,21 +95,21 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
             where w.id = ${w.id}
-            order by t.id asc
-        `);
+            order by t.id asc`);
+           
+            try{
+            const stream = client.query(query);
+            
+            stream.on('end', async () => {
+                const total = await queueContacts.count();
+                log.info(`Queue Widget ${w.id}:`, await queueContacts.getJobCounts());
+            });
+            stream.on('error', (err: any) => {
+                log.error(`Error: ${err}`);
+            });
 
-        const stream = client.query(query);
-
-        stream.on('end', async () => {
-            const total = await queueContacts.count();
-            console.log(`Queue Widget ${w.id}:`, await queueContacts.getJobCounts());
-        });
-        stream.on('error', (err: any) => {
-            console.log(err);
-        });
-
-        //                              
-        stream.pipe(JSONStream.stringify())
+            //                              
+            stream.pipe(JSONStream.stringify())
             .pipe(JSONStream.parse("*"))
             .pipe(
                 es.map((data: any, callback: any) => {
@@ -115,17 +133,24 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
                         }
                         return await queueContacts.add({ contact }, {
                             removeOnComplete: true,
-                        });
+                        });    
                     }
                     add(data)
                         .then((data) => {
                             callback(null, JSON.stringify(data));
                         })
                         .catch((err) => {
-                            console.log(`ERROR ADD QUEUE: ${err}`);
+                            log.error(`ERROR ADD QUEUE: ${err}`);
+                            apmAgent?.captureError(err);
                         });
-                })
-            );
+                    }
+                )
+            );} catch(error){
+                apmAgent?.captureError(error);
+                throw new Error("será?")
+            }
+            
+        } 
     });
     return queueContacts.toKey("id");
 }
