@@ -1,11 +1,20 @@
 import { queueContacts, dbClient } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
 import log, { apmAgent } from "./dbg";
+import { PoolClient } from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
 let workers = 1;
 export async function startResyncMailchimp() {
-    const client = await dbClient();
-    console.log("teste",
-    await queueContacts.getJobCounts());
+    
+    let client: PoolClient;
+    try{
+        client = await dbClient();
+    } catch (error) {
+        apmAgent?.captureError(error);
+        throw new Error(`Database connection failed`);
+    }
     queueContacts.process(1, async (job) => {
         try {
             await mailchimp(job.data.contact);
@@ -14,7 +23,7 @@ export async function startResyncMailchimp() {
                           mailchimp_syncronization_at = NOW()
                           where id = ${job.data.contact.id}`;
             await client.query(query).then((result) => {
-                log.info(`Contact updated id ${job.data.contact.id}`)
+                log.info(`Activist updated id ${job.data.contact.id}`)
             }).catch((err) => {
                 log.error(`${err}`);
                 apmAgent?.captureError(err);

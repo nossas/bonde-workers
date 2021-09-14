@@ -3,7 +3,6 @@ import Queue from "bull";
 const url = require('url');
 
 export const dbClient = async () => {
-
     const params = url.parse(process.env.DATABASE_URL || "");
     const auth = params.auth.split(':');
 

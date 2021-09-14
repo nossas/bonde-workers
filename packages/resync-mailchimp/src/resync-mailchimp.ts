@@ -18,7 +18,7 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
     } catch (error) {
         log.error(`${error}`);
         apmAgent?.captureError(error);
-        throw new Error(`Database connection faleid`);
+        throw new Error(`Database connection failed`);
     }
     const queryWidget = (iscommunity ? `select w.id , 
     w.kind
@@ -41,7 +41,13 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             log.error(`Error: ${error}`);
             apmAgent?.captureError(error);
         });
- 
+    
+    if (!widgets){
+        const msg = iscommunity? `No widgets found to community id ${id}` 
+                               : `Widget ${id} not found`;
+        throw new Error(msg);    
+    }       
+
     let table: string;
     widgets?.forEach(async (w) => {
 
@@ -64,13 +70,8 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             }
         }
 
-        if (!table){
-            log.error(`Kind of widget not found: ${ JSON.stringify(w)}`);
-        }
-        else {
-        
-            log.info(`Search contacts widget ${ JSON.stringify(w)}`);
-            const query = new QueryStream(`select
+        log.info(`Search contacts widget ${ JSON.stringify(w)}`);
+        const query = new QueryStream(`select
             a.first_name activist_first_name,
             a.last_name activist_last_name, 
             a.city activist_city, 
@@ -97,24 +98,22 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             where w.id = ${w.id}
             order by t.id asc`);
            
-            try{
-            const stream = client.query(query);
+        const stream = client.query(query);
             
-            stream.on('end', async () => {
-                const total = await queueContacts.count();
-                log.info(`Queue Widget ${w.id}:`, await queueContacts.getJobCounts());
-            });
-            stream.on('error', (err: any) => {
-                log.error(`Error: ${err}`);
-            });
-
-            //                              
-            stream.pipe(JSONStream.stringify())
-            .pipe(JSONStream.parse("*"))
-            .pipe(
-                es.map((data: any, callback: any) => {
-                    let add = async (data: any) => {
-                        const contact = {
+        stream.on('end', async () => {
+            log.info(`Add activists of Widget ${w.id}`);
+        });
+        stream.on('error', (err: any) => {
+            log.error(`${err}`);
+            apmAgent?.captureError(err);
+        });
+                            
+        stream.pipe(JSONStream.stringify())
+        .pipe(JSONStream.parse("*"))
+        .pipe(
+            es.map((data: any, callback: any) => {
+                let add = async (data: any) => {
+                    const contact = {
                             id: data.id,
                             first_name: data.activist_first_name,
                             last_name: data.activist_last_name,
@@ -136,21 +135,16 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
                         });    
                     }
                     add(data)
-                        .then((data) => {
-                            callback(null, JSON.stringify(data));
-                        })
-                        .catch((err) => {
-                            log.error(`ERROR ADD QUEUE: ${err}`);
-                            apmAgent?.captureError(err);
-                        });
-                    }
-                )
-            );} catch(error){
-                apmAgent?.captureError(error);
-                throw new Error("será?")
-            }
-            
-        } 
+                    .then((data) => {
+                        callback(null, JSON.stringify(data));
+                    })
+                    .catch((err) => {
+                        log.error(`ERROR ADD QUEUE: ${err}`);
+                        apmAgent?.captureError(err);
+                    });
+                }
+            )
+        );        
     });
     return queueContacts.toKey("id");
 }

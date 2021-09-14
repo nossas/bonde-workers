@@ -19,17 +19,16 @@ app.post('/resync-mailchimp', async (req, res) => {
         log.error(`Invalid request id = ${id}`);
         return res.status(404).json({ error: "Invalid request" });
     } 
-    let queue   
+    
     try{
-        queue = await resyncMailchimpHandle(id, iscommunity);
+        const queue = await resyncMailchimpHandle(id, iscommunity);
 
         return res.json({
             queue: queue
         });
     } catch(err){
         return res.status(500).json(`${err}`);
-    }
-    
+    }   
 });
 
 app.listen(Number(PORT), "0.0.0.0", () => {
