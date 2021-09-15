@@ -103,7 +103,6 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         const stream = client.query(query);
             
         stream.on('end', async () => {
-            client.release();
             log.info(`Add activists of Widget ${w.id}`);
         });
         stream.on('error', (err: any) => {
@@ -115,7 +114,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         .pipe(JSONStream.parse("*"))
         .pipe(
             es.map((data: any, callback: any) => {
-                let add = async (data: any) => {
+                let add = async (data: any) => {                
                     const contact = {
                             id: data.id,
                             first_name: data.activist_first_name,
