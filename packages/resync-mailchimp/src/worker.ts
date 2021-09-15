@@ -15,24 +15,29 @@ export async function startResyncMailchimp() {
         apmAgent?.captureError(error);
         throw new Error(`Database connection failed`);
     }
-    queueContacts.process(1, async (job) => {
+
+    await queueContacts.process(1, async (job) => {
+        const table = job.data.contact.action;
+        let query; 
         try {
-            await mailchimp(job.data.contact);
-            const query = `update ${job.data.contact.action} set
-                          synchronized = true, 
-                          mailchimp_syncronization_at = NOW()
-                          where id = ${job.data.contact.id}`;
-            await client.query(query).then((result) => {
-                log.info(`Activist updated id ${job.data.contact.id}`)
-            }).catch((err) => {
-                log.error(`${err}`);
-                apmAgent?.captureError(err);
-            })
-        }
-        catch (err) {
+            const date = await mailchimp(job.data.contact);
+            query = `update ${table} set 
+                    mailchimp_syncronization_at = '${date.updated_at}'
+                    where id = ${job.data.contact.id}`;
+        }catch(err) {
+            log.error(`Failed resync ${err}`);
+            apmAgent?.captureError(err);
+            query = `update ${table} set 
+                    mailchimp_syncronization_error_reason = '${err}'
+                    where id = ${job.data.contact.id}`;
+        }    
+                
+        await client.query(query).then((result) => {
+            log.info(`updated ${table} id ${job.data.contact.id}`)
+        }).catch((err) => {
             log.error(`${err}`);
             apmAgent?.captureError(err);
-        }
+        });
     });
 }
 
