@@ -3,6 +3,7 @@ import es from "event-stream";
 import { dbClient, queueContacts } from "./utils";
 import { PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
+import { createParen } from "typescript";
 const JSONStream = require('JSONStream');
 
 export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
@@ -37,14 +38,16 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         .then((result) => {
             return result.rows
         }).catch(error => {
-            log.error(`Error: ${error}`);
             apmAgent?.captureError(error);
+            throw new Error(`Error search widgets: ${error}`);        
         });
-    
-    if (!widgets){
-        const msg = iscommunity? `No widgets found to community id ${id}` 
+   
+    if (widgets.length == 0){
+        client.release();
+        const status = iscommunity? `No widgets found for community id ${id}` 
                                : `Widget ${id} not found`;
-        throw new Error(msg);    
+        log.info(status); 
+        return status;   
     }       
 
     let table: string;
@@ -94,7 +97,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where w.id = ${w.id} and t.id =3407932
+            where w.id = ${w.id}
             order by t.id asc`);
           
         const stream = client.query(query);

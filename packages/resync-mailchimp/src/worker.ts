@@ -35,7 +35,7 @@ export async function startResyncMailchimp() {
         await client.query(query).then((result) => {
             log.info(`updated ${table} id ${job.data.contact.id}`)
         }).catch((err) => {
-            log.error(`${err}`);
+            log.error(`Failed update ${err}`);
             apmAgent?.captureError(err);
         });
     });

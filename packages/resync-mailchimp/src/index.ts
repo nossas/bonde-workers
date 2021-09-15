@@ -13,13 +13,11 @@ const PORT = process.env.PORT || 3000;
 
 app.post('/add-resync-mailchimp', async (req, res) => {
 
-    // get request input
-    const { iscommunity, id } = req.body.input;
-    if (!id) {
-        log.error(`Invalid request id = ${id}`);
+    if (!req.body.input || !req.body.input.id) {
+        log.error(`Invalid request id`);
         return res.status(404).json({ error: "Invalid request" });
-    } 
-    
+    }     
+    const { iscommunity, id } = req.body.input;
     try{
         const status= await addResyncMailchimpHandle(id, iscommunity);
         return res.json({
