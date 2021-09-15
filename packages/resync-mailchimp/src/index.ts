@@ -1,8 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
-import { resyncMailchimpHandle } from "./resync-mailchimp"
+import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
 import log, { apmAgent } from "./dbg";
-import { Logger } from "pino";
+import Mailchimp from 'mailchimp-api-v3';
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-app.post('/resync-mailchimp', async (req, res) => {
+app.post('/add-resync-mailchimp', async (req, res) => {
 
     // get request input
     const { iscommunity, id } = req.body.input;
@@ -21,10 +21,9 @@ app.post('/resync-mailchimp', async (req, res) => {
     } 
     
     try{
-        const queue = await resyncMailchimpHandle(id, iscommunity);
-
+        const status= await addResyncMailchimpHandle(id, iscommunity);
         return res.json({
-            queue: queue
+           status: status
         });
     } catch(err){
         return res.status(500).json(`${err}`);

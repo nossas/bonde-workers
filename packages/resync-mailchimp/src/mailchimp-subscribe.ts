@@ -1,9 +1,6 @@
 import Mailchimp from 'mailchimp-api-v3';
 import crypto from 'crypto';
 import { Contact, Tag, TagFields } from "./types";
-interface MailchimpResolve {
-    subscribe: () => Promise<any>
-};
 
 export const tags = (fields: TagFields): Tag[] => {
 

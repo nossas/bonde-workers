@@ -1,4 +1,4 @@
-import { resyncMailchimpHandle } from "../src/resync-mailchimp";
+import { addResyncMailchimpHandle } from "../src/add-resync-mailchimp";
 import pgmock, { getPool } from 'pgmock2';
 import Redis from "ioredis-mock";
 import Queue from "bull";
@@ -10,15 +10,14 @@ const utils = require('../src/utils');
 jest.mock('../src/utils');
 jest.mock('bull');
 const redisMockClient = new Redis();
-const mockQueue = new Queue("contacts-mailchimp", { createClient: () => redisMockClient });
-let spyTokey = jest.spyOn(mockQueue, 'toKey').mockImplementation(() => "bull:contacts-mailchimp:id");
+const mockQueue = new Queue("resync-contacts-mailchimp", { createClient: () => redisMockClient });
 
 const client = pool.connect();
 utils.dbClient.mockResolvedValue(client);
 utils.queueContacts = mockQueue;
 const spyonQuery = jest.spyOn(pg, "query");
 
-describe("resyncMailchimpHandle search with widget", () => {
+describe("addResyncMailchimpHandle search with widget", () => {
     
     pg.add('select id, kind from widgets where id = 1234', ['string'], {
         rowCount: 1,
@@ -27,8 +26,8 @@ describe("resyncMailchimpHandle search with widget", () => {
         ]
     });
     it("should return id queue", async () => {
-        const id = await resyncMailchimpHandle(1234, false);
-        expect(id).toBe("bull:contacts-mailchimp:id");
+        const id = await addResyncMailchimpHandle(1234, false);
+        expect(id).toBe("started to add contacts to the queue");
     });
 
     it("should call query 2 times", () => {

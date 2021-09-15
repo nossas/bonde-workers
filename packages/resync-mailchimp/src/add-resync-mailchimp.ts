@@ -5,13 +5,12 @@ import { PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
-export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
+export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
     
     apmAgent?.setCustomContext({
         id,
         iscommunity
     });
-
     let client: PoolClient; 
     try{
         client = await dbClient();
@@ -95,12 +94,13 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where w.id = ${w.id}
+            where w.id = ${w.id} and t.id =3407932
             order by t.id asc`);
-           
+          
         const stream = client.query(query);
             
         stream.on('end', async () => {
+            client.release();
             log.info(`Add activists of Widget ${w.id}`);
         });
         stream.on('error', (err: any) => {
@@ -146,5 +146,5 @@ export async function resyncMailchimpHandle(id: number, iscommunity: boolean) {
             )
         );        
     });
-    return queueContacts.toKey("id");
+    return "started to add contacts to the queue";
 }
