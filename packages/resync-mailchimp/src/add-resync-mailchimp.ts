@@ -4,6 +4,7 @@ import { dbClient, queueContacts } from "./utils";
 import { PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 import { createParen } from "typescript";
+import { nextTick } from "process";
 const JSONStream = require('JSONStream');
 
 export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
@@ -99,11 +100,16 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             left join communities c on m.community_id = c.id
             where w.id = ${w.id}
             order by t.id asc`);
-          
-        const stream = client.query(query);
-            
+        
+        let stream : QueryStream;
+        try{
+            stream = client.query(query);
+        } catch(err){
+            apmAgent?.captureError(err);
+            throw new Error(`${err}`)   
+        }              
         stream.on('end', async () => {
-            log.info(`Add activists of Widget ${w.id}`);
+            log.info(`Add ${stream._result.rowCount} activists of Widget ${w.id}`);
         });
         stream.on('error', (err: any) => {
             log.error(`${err}`);
