@@ -3,8 +3,6 @@ import es from "event-stream";
 import { dbClient, queueContacts } from "./utils";
 import { PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
-import { createParen } from "typescript";
-import { nextTick } from "process";
 const JSONStream = require('JSONStream');
 
 export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {

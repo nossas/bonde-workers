@@ -37,8 +37,8 @@ export default async (contact: Contact): Promise<any> => {
         "email_address": contact.email,
         "status": "subscribed",
         "merge_fields": {
-            "FNAME": contact.first_name,
-            "LNAME": contact.last_name
+            "FNAME": contact.first_name || "SEM NOME",
+            "LNAME": contact.last_name || "SEM SOBRENOME"
         }
     }
 
