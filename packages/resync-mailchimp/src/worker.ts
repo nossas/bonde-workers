@@ -1,4 +1,4 @@
-import { queueContacts, dbClient } from "./utils";
+import { queueContacts, dbClient, actionTable } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
 import log, { apmAgent } from "./dbg";
 import { PoolClient } from "pg";
@@ -17,7 +17,7 @@ export async function startResyncMailchimp() {
     }
 
     await queueContacts.process(1, async (job) => {
-        const table = job.data.contact.action;
+        const table =  actionTable(job.data.contact.kind);
         let query; 
         try {
             const date = await mailchimp(job.data.contact);

@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.post('/add-resync-mailchimp', async (req, res) => {
 
     if (!req.body.input || !req.body.input.id) {
-        log.error(`Invalid request id`);
+        log.error(`Invalid request ${req.body}`);
         return res.status(404).json({ error: "Invalid request" });
     }     
     const { iscommunity, id } = req.body.input;

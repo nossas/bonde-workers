@@ -1,6 +1,6 @@
 import QueryStream from "pg-query-stream";
 import es from "event-stream";
-import { dbClient, queueContacts } from "./utils";
+import { dbClient, queueContacts, actionTable } from "./utils";
 import { PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
@@ -49,28 +49,10 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         return status;   
     }       
 
-    let table: string;
+    let table;
     widgets?.forEach(async (w) => {
 
-        switch (w.kind) {
-            case 'donation': {
-                table = 'donations';
-                break;
-            }
-            case 'form': {
-                table = 'form_entries';
-                break;
-            }
-            case 'pressure': {
-                table = 'activist_pressures';
-                break;
-            }
-            case 'pressure-phone': {
-                table = 'activist_pressures';
-                break;
-            }
-        }
-
+        table = actionTable(w.kind);
         log.info(`Search contacts widget ${ JSON.stringify(w)}`);
         const query = new QueryStream(`select
             a.first_name activist_first_name,
@@ -125,10 +107,10 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                             last_name: data.activist_last_name,
                             email: data.activist_email,
                             state: data.activist_state,
+                            phone: data.activist_phone,
                             city: data.activist_city,
                             widget_id: data.widget_id,
                             kind: data.widget_kind,
-                            action: table,
                             mobilization_id: data.mobilization_id,
                             mobilization_name: data.mobilization_name,
                             community_id: data.community_id,
