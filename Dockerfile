@@ -1,6 +1,11 @@
-FROM node:12-slim
-ENV PORT 8080
-EXPOSE 8080
+FROM node:14-alpine
+
 WORKDIR /usr/src/app
+
+RUN yarn global add pnpm
+
 COPY . .
-CMD ["npm", "start"]
+
+RUN pnpm i
+
+RUN pnpm m run build

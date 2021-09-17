@@ -1,0 +1,99 @@
+workspace:
+  base: /code
+
+pipeline:
+  test:
+    image: node:14-alpine
+    environment:
+      - PORT = 3000
+      - REDIS_URL=redis://127.0.0.1:6379
+      - DATABASE_URL=postgres://bonde@localhost/bonde
+      - ELASTIC_APM_SERVICE_NAME=bonde-workers
+      - ELASTIC_APM_SERVER_URL=http://localhost:9200
+      - ELASTIC_APM_SECRET_TOKEN=1111
+      - ELASTIC_APM_ACTIVE=false
+    commands:
+      - sleep 5;
+      - apk --update add curl postgresql-client
+      - psql -c "create database bonde;" -hdatabase -U postgres -W postgres
+      - psql -c "create role bonde SUPERUSER LOGIN;" -hdatabase -U postgres -W postgres
+      - curl -L https://unpkg.com/@pnpm/self-installer | node
+      - pnpm i
+      - pnpm m run build
+      - pnpm m run test
+  publish-staging-build:
+    image: plugins/docker
+    repo: nossas/bonde-workers
+    dockerfile: Dockerfile
+    secrets: [ docker_username, docker_password ]
+    group: builder
+    tags:
+      - ${DRONE_BRANCH/\//-}
+    when:
+      status: success
+      event: [push]
+
+  publish-production-build:
+    image: plugins/docker
+    repo: nossas/bonde-workers
+    dockerfile: Dockerfile
+    secrets: [ docker_username, docker_password ]
+    group: builder
+    tags:
+      - ${DRONE_TAG##v}
+      - latest
+    when:
+      status: success
+      event: [tag]
+  
+  mailchimp-action-staging-deploy:
+    image: peloton/drone-rancher
+    url: http://cluster.bonde.org
+    service: actions/mailchimp-resync
+    group: deploying
+    docker_image: nossas/bonde-workers:${DRONE_BRANCH/\//-}
+    timeout: 360
+    confirm: true
+    secrets: [ rancher_access_key, rancher_secret_key ]
+    when:
+      status: success
+      event: [push]
+  
+  mailchimp-worker-staging-deploy:
+    image: peloton/drone-rancher
+    url: http://cluster.bonde.org
+    service: workers/mailchimp-resync
+    group: deploying
+    docker_image: nossas/bonde-workers:${DRONE_BRANCH/\//-}
+    timeout: 360
+    confirm: true
+    secrets: [ rancher_access_key, rancher_secret_key ]
+    when:
+      status: success
+      event: [push]
+
+  accounts-production-deploy:
+    image: peloton/drone-rancher
+    url: http://cluster.bonde.org
+    service: apis/accounts
+    group: deploying
+    docker_image: "nossas/bonde-workers:${DRONE_TAG##v}"
+    timeout: 360
+    confirm: true
+    secrets:
+      - source: rancher_access_key_prod
+        target: rancher_access_key
+      - source: rancher_secret_key_prod
+        target: rancher_secret_key
+    when:
+      status: success
+      event: [tag]
+
+services:
+  database:
+    image: postgres:9
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+  queue:
+    image: redis:3.2.4-alpine
