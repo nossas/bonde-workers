@@ -8,14 +8,6 @@ dotenv.config();
 let workers = 1;
 export async function startResyncMailchimp() {
     
-    let client: PoolClient;
-    try{
-        client = await dbClient();
-    } catch (error) {
-        apmAgent?.captureError(error);
-        throw new Error(`Database connection failed`);
-    }
-
     await queueContacts.process(1, async (job) => {
         const table =  actionTable(job.data.contact.kind);
         let query; 
@@ -33,6 +25,14 @@ export async function startResyncMailchimp() {
                     where id = ${job.data.contact.id}`;
             console.log(query);
         }    
+    
+        let client: PoolClient;
+        try{
+            client = await dbClient();
+        } catch (error) {
+            apmAgent?.captureError(error);
+            throw new Error(`Database connection failed`);
+        }
                 
         await client.query(query).then((result) => {
             log.info(`updated ${table} id ${job.data.contact.id}`)
@@ -40,6 +40,7 @@ export async function startResyncMailchimp() {
             log.error(`Failed update ${err}`);
             apmAgent?.captureError(err);
         });
+        client.release();
     });
 }
 
