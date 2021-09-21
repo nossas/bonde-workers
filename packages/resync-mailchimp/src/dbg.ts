@@ -1,7 +1,9 @@
 import pino from "pino";
 import apm from "elastic-apm-node";
 import ecsFormat from "@elastic/ecs-pino-format";
+import dotenv from "dotenv";
 
+dotenv.config();
 const log = pino({ ...ecsFormat({ convertReqRes: true }) });
 
 const {
