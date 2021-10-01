@@ -31,7 +31,8 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
     and m.community_id  = c.id 
     and b.mobilization_id  = m.id
     and w.kind in ('form','donation','pressure-phone','pressure')`
-        : `select id, kind from widgets where id = ${id}`);
+        : `select id, kind from widgets where id = ${id} 
+           and kind in ('form','donation','pressure-phone','pressure')`);
 
     const widgets = await client.query(queryWidget)
         .then((result) => {
@@ -47,8 +48,11 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                                : `Widget ${id} not found`;
         log.info(status); 
         return status;   
-    }       
-
+    } 
+    
+    apmAgent?.setCustomContext({
+       widgets: widgets
+    });
     let table;
     widgets?.forEach(async (w) => {
 
@@ -82,6 +86,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             order by t.id asc`);
         
         let stream : QueryStream;
+
         try{
             stream = client.query(query);
         } catch(err){
