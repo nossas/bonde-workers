@@ -1,10 +1,9 @@
-import express from "express";
 import dotenv from "dotenv";
-import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
-import log, { apmAgent } from "./dbg";
-import Mailchimp from 'mailchimp-api-v3';
-
 dotenv.config();
+
+import express from "express";
+import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
+import log from "./dbg";
 
 const app = express();
 app.use(express.json());

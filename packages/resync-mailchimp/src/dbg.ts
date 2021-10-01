@@ -1,9 +1,7 @@
 import pino from "pino";
 import apm from "elastic-apm-node";
 import ecsFormat from "@elastic/ecs-pino-format";
-import dotenv from "dotenv";
 
-dotenv.config();
 const log = pino({ ...ecsFormat({ convertReqRes: true }) });
 
 const {
@@ -20,7 +18,7 @@ if (secretToken && serverUrl && serviceName) {
     serverUrl,
     serviceName,
     environment: process.env.NODE_ENV,
-    captureBody: "errors"
+    captureBody: 'all'
   });
 }
 
