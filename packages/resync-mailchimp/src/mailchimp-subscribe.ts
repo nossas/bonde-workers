@@ -1,6 +1,7 @@
 import Mailchimp from 'mailchimp-api-v3';
 import crypto from 'crypto';
 import { Contact, Tag, TagFields } from "./types";
+import log, { apmAgent } from "./dbg";
 
 export const tags = (fields: TagFields): Tag[] => {
 
@@ -33,16 +34,35 @@ export default async (contact: Contact): Promise<any> => {
     };
     const client = new Mailchimp(mailchimp_api_key || '');
     const listID = mailchimp_list_id;
+    const path = `/lists/${listID}/members/${hash(contact.email)}`;
+
+    //alternative names
+    let fname = "Sem Nome"; 
+    let lname = "Sem Sobrenome";
+    if (!contact.first_name || !contact.last_name) {
+        console.log("aqui")
+        await client.get(path)
+        .then((result) => {
+            console.log(`${JSON.stringify(result)}`) 
+            fname = result.merge_fields.FNAME;
+            lname = result.merge_fields.LNAME;
+        })
+        .catch((err)=> {
+          log.error(`Member  ${contact.email} not found:  ${err}`);  
+          apmAgent?.captureError(err);
+        });  
+    }
+
     const body: any = {
         "email_address": contact.email,
         "status": "subscribed",
         "merge_fields": {
-            "FNAME": contact.first_name || "SEM NOME",
-            "LNAME": contact.last_name || "SEM SOBRENOME"
+            "FNAME": contact.first_name || fname,
+            "LNAME": contact.last_name || lname
         }
     }
-
-    if (contact.city) {
+ 
+   if (contact.city) {
         body.merge_fields['CITY'] = contact.city;
     }
     if (contact.phone) {
@@ -52,7 +72,6 @@ export default async (contact: Contact): Promise<any> => {
         body.merge_fields['STATE'] = contact.state;
     }
 
-    const path = `/lists/${listID}/members/${hash(contact.email)}`;
     // Create or Update Member
     const response = await client.put({ path, body });
     // Add tags
