@@ -19,7 +19,8 @@ const spyonQuery = jest.spyOn(pg, "query");
 
 describe("addResyncMailchimpHandle search with widget", () => {
     
-    pg.add('select id, kind from widgets where id = 1234', ['string'], {
+    pg.add(`select id, kind from widgets where id = 1234 and kind in ('form','donation','pressure-phone','pressure')`,
+        ['string'], {
         rowCount: 1,
         rows: [
             { id: 1234, kind: 'donation' }
@@ -31,7 +32,8 @@ describe("addResyncMailchimpHandle search with widget", () => {
     });
 
     it("should call query 2 times", () => {
-        expect(spyonQuery).toHaveBeenCalledWith('select id, kind from widgets where id = 1234', undefined);
+        expect(spyonQuery).toHaveBeenCalledWith(`select id, kind from widgets where id = 1234 and kind in ('form','donation','pressure-phone','pressure')`,
+                                                 undefined);
         expect(spyonQuery).toBeCalledTimes(2);
     });
     ;

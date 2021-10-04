@@ -31,8 +31,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
     and m.community_id  = c.id 
     and b.mobilization_id  = m.id
     and w.kind in ('form','donation','pressure-phone','pressure')`
-        : `select id, kind from widgets where id = ${id} 
-           and kind in ('form','donation','pressure-phone','pressure')`);
+        : `select id, kind from widgets where id = ${id} and kind in ('form','donation','pressure-phone','pressure')`);
 
     const widgets = await client.query(queryWidget)
         .then((result) => {
