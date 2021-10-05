@@ -25,16 +25,16 @@ export const queueContacts = new Queue(`resync-contacts-mailchimp`, REDIS_URL);
 export const actionTable = ( kind: string) =>{
     switch (kind) {
         case 'donation': {
-            return 'donations';
+            return { name: 'donations', action_fields: 'customer'};
         }
         case 'form': {
-            return 'form_entries';
+            return {name:'form_entries', action_fields:'fields'};
         }
         case 'pressure': {
-            return 'activist_pressures';
+            return {name:'activist_pressures', action_fields:'form_data'};
         }
         case 'pressure-phone': {
-            return 'activist_pressures';
+            return {name: 'activist_pressures',action_fields: 'form_data'};
         }
         default: return undefined
     }

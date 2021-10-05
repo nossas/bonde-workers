@@ -7,9 +7,9 @@ import dotenv from "dotenv";
 dotenv.config();
 let workers = 1;
 export async function startResyncMailchimp() {
-    
+
     await queueContacts.process(1, async (job) => {
-        const table =  actionTable(job.data.contact.kind);
+        const table =  actionTable(job.data.contact.kind)?.name;
         let query; 
         try {
             const date = await mailchimp(job.data.contact);
@@ -23,7 +23,6 @@ export async function startResyncMailchimp() {
             query = `update ${table} set 
                     mailchimp_syncronization_error_reason = '${msg.replace(/'/g, '"')}'
                     where id = ${job.data.contact.id}`;
-            console.log(query);
         }    
     
         let client: PoolClient;

@@ -34,15 +34,16 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         : `select id, kind from widgets where id = ${id} and kind in ('form','donation','pressure-phone','pressure')`);
 
     const widgets = await client.query(queryWidget)
-        .then((result) => {
+        .then((result) => {          
             return result.rows
         }).catch(error => {
+            client.release();
             apmAgent?.captureError(error);
             throw new Error(`Error search widgets: ${error}`);        
         });
-   
-    if (widgets.length == 0){
-        client.release();
+    client.release();
+
+    if (widgets.length == 0){    
         const status = iscommunity? `No widgets found for community id ${id}` 
                                : `Widget ${id} not found`;
         log.info(status); 
@@ -56,10 +57,11 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
     widgets?.forEach(async (w) => {
 
         table = actionTable(w.kind);
+        
         log.info(`Search contacts widget ${ JSON.stringify(w)}`);
         const query = new QueryStream(`select
-            a.first_name activist_first_name,
-            a.last_name activist_last_name, 
+            trim(a.first_name) activist_first_name,
+            trim(a.last_name) activist_last_name, 
             a.city activist_city, 
             a.state activist_state, 
             a.phone activist_phone,       
@@ -73,27 +75,30 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             c."name" community_name, 
             c.mailchimp_api_key , 
             c.mailchimp_list_id,
-            t.id
+            t.id,
+            t.${table?.action_fields} action_fields
             from
-            ${table} t 
+            ${table?.name} t
             left join activists a on  a.id = t.activist_id
             left join widgets w on t.widget_id = w.id
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where w.id = ${w.id}
+            where w.id = ${w.id} 
             order by t.id asc`);
         
         let stream : QueryStream;
-
+        let clientStream: PoolClient;
         try{
-            stream = client.query(query);
+            clientStream = await dbClient();
+            stream = clientStream.query(query);
         } catch(err){
             apmAgent?.captureError(err);
             throw new Error(`${err}`)   
         }              
         stream.on('end', async () => {
-            log.info(`Add ${stream._result.rowCount} activists of Widget ${w.id}`);
+            log.info(`Add activists of Widget ${w.id}`);
+            clientStream.release();
         });
         stream.on('error', (err: any) => {
             log.error(`${err}`);
@@ -120,7 +125,8 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                             community_id: data.community_id,
                             community_name: data.community_name,
                             mailchimp_api_key: data.mailchimp_api_key,
-                            mailchimp_list_id: data.mailchimp_list_id
+                            mailchimp_list_id: data.mailchimp_list_id,
+                            action_fields: data.action_fields
                         }
                         return await queueContacts.add({ contact }, {
                             removeOnComplete: true,
