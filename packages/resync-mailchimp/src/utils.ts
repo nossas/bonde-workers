@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import Queue from "bull";
+import {ActionFields} from "./types";
 const url = require('url');
 
 export const dbClient = async () => {
@@ -38,5 +39,60 @@ export const actionTable = ( kind: string) =>{
         }
         default: return undefined
     }
+}
+
+export const findMergeFields = (kind: string, action_fields: any) => {
+
+    console.log(kind)
+    let merge_fields : ActionFields = {
+        first_name: "",
+        last_name: "",
+        email: ""
+    };
+
+    let preparedFields: string[] = []; 
+    switch (kind) {
+        case 'form': {    
+            JSON.parse(action_fields).forEach((field: any) => {
+                preparedFields[
+                    field.label
+                    .toLowerCase()
+                    .replace(/ /g, "_")
+                    .replace(/[^\w-]+/g, "")
+                ] = field.value !== undefined ? field.value : " ";
+            });
+            const re =
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    
+
+            for (const [key, value] of Object.entries(preparedFields)) {
+                if (re.test(String(value).toLowerCase())) {
+                    merge_fields.email = value;
+                } else if (key.indexOf("nome") >= 0) {
+                    (key.indexOf("sobrenome") < 0)? merge_fields.first_name = value: merge_fields.last_name = value;  
+                }
+            }
+        } 
+
+        case 'donation' :{
+            let preparedCustomer = JSON.parse('{'+ action_fields.replace(/=>/g, ":")
+            .replace(/\\/g,"")
+            .replace(/"{/g, "{")
+            .replace(/}"/g, "}")+ '}');
+            
+            merge_fields.first_name = preparedCustomer.name;
+            merge_fields.last_name = " ";
+            merge_fields.email = preparedCustomer.email; 
+        }
+
+        case ('pressure' || 'pressure-phone') :{
+
+            let preparedFormData = JSON.parse(JSON.stringify(action_fields)); 
+            merge_fields.first_name = preparedFormData.name;
+            merge_fields.last_name = preparedFormData.last_name;
+            merge_fields.email = preparedFormData.email; 
+        }
+    }
+    return merge_fields;
 }
 

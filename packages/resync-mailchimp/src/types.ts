@@ -31,3 +31,9 @@ export type TagFields = {
     widget_id: number,
     kind: string
 }
+
+export type ActionFields = {
+    first_name: string,
+    last_name: string,
+    email: string
+}

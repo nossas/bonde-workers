@@ -20,7 +20,7 @@ describe('mailchimp function tests', () => {
     const contact: Contact = {
         id: 345,
         email: 'email@email.org',
-        first_name: 'Name',
+        first_name: 'Nome',
         last_name: 'Sobrenome',
         phone: "9999999999",
         city: "City",
@@ -33,13 +33,14 @@ describe('mailchimp function tests', () => {
         kind: "pressure",
         action: "activist_pressures",
         mailchimp_api_key: 'xxx-us10',
-        mailchimp_list_id: 'xxx'
+        mailchimp_list_id: 'xxx',
+        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}'
     }
 
     const contact_2: Contact = {
         id: 346,
         email: 'email@email.org',
-        first_name: 'Name',
+        first_name: 'Nome',
         last_name: 'Sobrenome',
         phone: undefined,
         city: undefined,
@@ -52,7 +53,8 @@ describe('mailchimp function tests', () => {
         kind: "pressure",
         action: "activist_pressures",
         mailchimp_api_key: 'xxx-us10',
-        mailchimp_list_id: 'xxx'
+        mailchimp_list_id: 'xxx',
+        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}'
     }
 
     afterEach(() => {
