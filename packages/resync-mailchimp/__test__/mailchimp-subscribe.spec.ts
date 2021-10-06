@@ -160,8 +160,8 @@ describe('mailchimp function tests', () => {
                 email_address: contact.email,
                 status: "subscribed",
                 merge_fields: {
-                    FNAME: "Nome Sobrenome",
-                    LNAME: " "
+                    FNAME: "Nome",
+                    LNAME: "Sobrenome"
                 }
             }
         };

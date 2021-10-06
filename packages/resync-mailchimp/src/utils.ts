@@ -74,7 +74,7 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                     (key.indexOf("sobrenome") < 0)? mergeFields.first_name = value: mergeFields.last_name = value;  
                 }
             }
-            return mergeFields;
+            break;
         } 
 
         case 'donation':{
@@ -82,25 +82,36 @@ export const findMergeFields = (kind: string, action_fields: any) => {
             .replace(/\\/g,"")
             .replace(/"{/g, "{")
             .replace(/}"/g, "}")+ '}');
-            mergeFields.first_name = preparedCustomer.name;
-            mergeFields.last_name = " ";
+              
+            if(preparedCustomer.name.trim().indexOf(" ")>0){
+                mergeFields.first_name = preparedCustomer.name.trim().split(' ').slice(0, -1).join(' ');
+                mergeFields.last_name  = preparedCustomer.name.trim().split(' ').slice(-1).join(' ');
+            } else {
+                mergeFields.first_name = preparedCustomer.name;
+                mergeFields.last_name = " ";
+            }
+         
             mergeFields.email = preparedCustomer.email; 
-            return mergeFields;
+            break;
         }
 
         case 'pressure' :{
             mergeFields.first_name = action_fields.name;
             mergeFields.last_name = action_fields.lastname;
             mergeFields.email = action_fields.email; 
-            return mergeFields;
+            break;
         }
 
         case 'pressure-phone':{
             mergeFields.first_name = action_fields.name;
             mergeFields.last_name = action_fields.lastname;
             mergeFields.email = action_fields.email; 
-            return mergeFields;
+            break;
         }
+    }
+
+    if(!mergeFields.first_name || !mergeFields.last_name){
+        throw new Error('Fields not found!');     
     }
     return mergeFields;
 }
