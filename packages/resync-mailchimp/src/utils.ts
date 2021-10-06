@@ -42,13 +42,16 @@ export const actionTable = ( kind: string) =>{
 }
 
 export const findMergeFields = (kind: string, action_fields: any) => {
-
+    if(!action_fields) {
+        throw new Error('Fields are empty!');  
+    }
+    
     let mergeFields: MergeFields = {
         first_name: "",
         last_name: "",
         email: ""
     };
-   
+
     switch (kind) {
         case 'form': {    
             let preparedFields: string[] = []; 
