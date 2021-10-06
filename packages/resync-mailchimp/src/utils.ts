@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import Queue from "bull";
-import {ActionFields} from "./types";
+import { MergeFields } from "./types";
 const url = require('url');
 
 export const dbClient = async () => {
@@ -43,16 +43,15 @@ export const actionTable = ( kind: string) =>{
 
 export const findMergeFields = (kind: string, action_fields: any) => {
 
-    console.log(kind)
-    let merge_fields : ActionFields = {
+    let mergeFields: MergeFields = {
         first_name: "",
         last_name: "",
         email: ""
     };
-
-    let preparedFields: string[] = []; 
+   
     switch (kind) {
         case 'form': {    
+            let preparedFields: string[] = []; 
             JSON.parse(action_fields).forEach((field: any) => {
                 preparedFields[
                     field.label
@@ -67,32 +66,39 @@ export const findMergeFields = (kind: string, action_fields: any) => {
 
             for (const [key, value] of Object.entries(preparedFields)) {
                 if (re.test(String(value).toLowerCase())) {
-                    merge_fields.email = value;
+                    mergeFields.email = value;
                 } else if (key.indexOf("nome") >= 0) {
-                    (key.indexOf("sobrenome") < 0)? merge_fields.first_name = value: merge_fields.last_name = value;  
+                    (key.indexOf("sobrenome") < 0)? mergeFields.first_name = value: mergeFields.last_name = value;  
                 }
             }
+            return mergeFields;
         } 
 
-        case 'donation' :{
-            let preparedCustomer = JSON.parse('{'+ action_fields.replace(/=>/g, ":")
+        case 'donation':{
+            const preparedCustomer = JSON.parse('{'+ action_fields.replace(/=>/g, ":")
             .replace(/\\/g,"")
             .replace(/"{/g, "{")
             .replace(/}"/g, "}")+ '}');
-            
-            merge_fields.first_name = preparedCustomer.name;
-            merge_fields.last_name = " ";
-            merge_fields.email = preparedCustomer.email; 
+            mergeFields.first_name = preparedCustomer.name;
+            mergeFields.last_name = " ";
+            mergeFields.email = preparedCustomer.email; 
+            return mergeFields;
         }
 
-        case ('pressure' || 'pressure-phone') :{
+        case 'pressure' :{
+            mergeFields.first_name = action_fields.name;
+            mergeFields.last_name = action_fields.lastname;
+            mergeFields.email = action_fields.email; 
+            return mergeFields;
+        }
 
-            let preparedFormData = JSON.parse(JSON.stringify(action_fields)); 
-            merge_fields.first_name = preparedFormData.name;
-            merge_fields.last_name = preparedFormData.last_name;
-            merge_fields.email = preparedFormData.email; 
+        case 'pressure-phone':{
+            mergeFields.first_name = action_fields.name;
+            mergeFields.last_name = action_fields.lastname;
+            mergeFields.email = action_fields.email; 
+            return mergeFields;
         }
     }
-    return merge_fields;
+    return mergeFields;
 }
 

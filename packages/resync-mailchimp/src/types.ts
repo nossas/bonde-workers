@@ -32,7 +32,7 @@ export type TagFields = {
     kind: string
 }
 
-export type ActionFields = {
+export type MergeFields = {
     first_name: string,
     last_name: string,
     email: string

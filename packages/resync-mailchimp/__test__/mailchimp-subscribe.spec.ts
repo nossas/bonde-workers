@@ -15,7 +15,7 @@ jest.mock('mailchimp-api-v3', () =>
     })
 );
 mocked(Mailchimp, true);
-
+jest.mock('bull');
 describe('mailchimp function tests', () => {
     const contact: Contact = {
         id: 345,
@@ -55,6 +55,26 @@ describe('mailchimp function tests', () => {
         mailchimp_api_key: 'xxx-us10',
         mailchimp_list_id: 'xxx',
         action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}'
+    }
+
+    const contact_3: Contact = {
+        id: 346,
+        email: 'email@email.org',
+        first_name: "",
+        last_name: "",
+        phone: undefined,
+        city: undefined,
+        state: undefined,
+        community_id: 12,
+        community_name: "Community",
+        mobilization_id: 34,
+        mobilization_name: "Mobilization",
+        widget_id: 5678,
+        kind: "donation",
+        action: "donations",
+        mailchimp_api_key: 'xxx-us10',
+        mailchimp_list_id: 'xxx',
+        action_fields: `"name"=>"Nome Sobrenome", "email"=>"email@email.org", "phone"=>"{\\"ddd\\"=>\\"99\\", \\"number\\"=>\\"9999999999\\"}", "address"=>"{\\"zipcode\\"=>\\"0000000\\", \\"street\\"=>\\"Rua \\", \\"street_number\\"=>\\"00\\", \\"complementary\\"=>\\"0\\", \\"neighborhood\\"=>\\"Bairro\\", \\"city\\"=>\\"Cidade\\", \\"state\\"=>\\"AC\\"}", "document_number"=>"XXXXXXXXX"`       
     }
 
     afterEach(() => {
@@ -124,6 +144,29 @@ describe('mailchimp function tests', () => {
         };
 
         return mailchimp(contact)
+            .then(() => {
+                expect(mockPut).toBeCalledWith(expected);
+            });
+    });
+
+    it('merge fields name from donations fields', async () => {
+        mockPut.mockResolvedValue({ last_changed: '' });
+
+        const { mailchimp_api_key, mailchimp_list_id } = { ...contact_3 };
+
+        const expected = {
+            path: `/lists/${mailchimp_list_id}/members/${hash(contact_3.email)}`,
+            body: {
+                email_address: contact.email,
+                status: "subscribed",
+                merge_fields: {
+                    FNAME: "Nome Sobrenome",
+                    LNAME: " "
+                }
+            }
+        };
+
+        return mailchimp(contact_3)
             .then(() => {
                 expect(mockPut).toBeCalledWith(expected);
             });

@@ -1,7 +1,7 @@
 import Mailchimp from 'mailchimp-api-v3';
 import crypto from 'crypto';
-import { Contact, Tag, TagFields } from "./types";
-import log, { apmAgent } from "./dbg";
+import { Contact, MergeFields, Tag, TagFields } from "./types";
+import { findMergeFields } from "./utils";
 
 export const tags = (fields: TagFields): Tag[] => {
 
@@ -35,30 +35,20 @@ export default async (contact: Contact): Promise<any> => {
     const client = new Mailchimp(mailchimp_api_key || '');
     const listID = mailchimp_list_id;
     const path = `/lists/${listID}/members/${hash(contact.email)}`;
-
-    //alternative names
-    let fname = "Sem Nome"; 
-    let lname = "Sem Sobrenome";
-    if (!contact.first_name || !contact.last_name) {
-        console.log("aqui")
-        await client.get(path)
-        .then((result) => {
-            console.log(`${JSON.stringify(result)}`) 
-            fname = result.merge_fields.FNAME;
-            lname = result.merge_fields.LNAME;
-        })
-        .catch((err)=> {
-          log.error(`Member  ${contact.email} not found:  ${err}`);  
-          apmAgent?.captureError(err);
-        });  
+    
+    //search fields from actions
+    if (!contact.first_name || !contact.last_name) {    
+        const mergeFields = findMergeFields(contact.kind, contact.action_fields); 
+        contact.first_name = contact.first_name || mergeFields.first_name;
+        contact.last_name = contact.last_name || mergeFields.last_name;
     }
 
     const body: any = {
         "email_address": contact.email,
         "status": "subscribed",
         "merge_fields": {
-            "FNAME": contact.first_name || fname,
-            "LNAME": contact.last_name || lname
+            "FNAME": contact.first_name,
+            "LNAME": contact.last_name
         }
     }
  
