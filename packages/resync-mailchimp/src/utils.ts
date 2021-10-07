@@ -12,7 +12,9 @@ export const dbClient = async () => {
         password: auth[1],
         host: params.hostname,
         port: params.port,
-        database: params.pathname.split('/')[1]
+        database: params.pathname.split('/')[1],
+        idleTimeoutMillis: 0,
+         connectionTimeoutMillis: 0
     };
     const pool = new Pool(config);
     let client = await pool.connect();

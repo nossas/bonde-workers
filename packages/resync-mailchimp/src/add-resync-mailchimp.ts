@@ -41,9 +41,10 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             apmAgent?.captureError(error);
             throw new Error(`Error search widgets: ${error}`);        
         });
-    client.release();
+    
 
-    if (widgets.length == 0){    
+    if (widgets.length == 0){   
+        client.release(); 
         const status = iscommunity? `No widgets found for community id ${id}` 
                                : `Widget ${id} not found`;
         log.info(status); 
@@ -88,17 +89,15 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             order by t.id asc`);
         
         let stream : QueryStream;
-        let clientStream: PoolClient;
+
         try{
-            clientStream = await dbClient();
-            stream = clientStream.query(query);
+            stream = client.query(query);
         } catch(err){
             apmAgent?.captureError(err);
             throw new Error(`${err}`)   
         }              
         stream.on('end', async () => {
             log.info(`Add activists of Widget ${w.id}`);
-            clientStream.release();
         });
         stream.on('error', (err: any) => {
             log.error(`${err}`);
