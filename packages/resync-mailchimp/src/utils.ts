@@ -14,7 +14,7 @@ export const dbClient = async () => {
         port: params.port,
         database: params.pathname.split('/')[1],
         idleTimeoutMillis: 0,
-         connectionTimeoutMillis: 0
+        connectionTimeoutMillis: 0
     };
     const pool = new Pool(config);
     let client = await pool.connect();
@@ -23,7 +23,6 @@ export const dbClient = async () => {
 
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 export const queueContacts = new Queue(`resync-contacts-mailchimp`, REDIS_URL);
-
 
 export const actionTable = ( kind: string) =>{
     switch (kind) {
@@ -91,8 +90,7 @@ export const findMergeFields = (kind: string, action_fields: any) => {
             } else {
                 mergeFields.first_name = preparedCustomer.name;
                 mergeFields.last_name = " ";
-            }
-         
+            } 
             mergeFields.email = preparedCustomer.email; 
             break;
         }

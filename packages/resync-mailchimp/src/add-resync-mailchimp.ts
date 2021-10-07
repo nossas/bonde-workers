@@ -41,20 +41,21 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             apmAgent?.captureError(error);
             throw new Error(`Error search widgets: ${error}`);        
         });
-    
 
-    if (widgets.length == 0){   
+    const widgetsLength = widgets.length;     
+    if (widgetsLength == 0){   
         client.release(); 
         const status = iscommunity? `No widgets found for community id ${id}` 
                                : `Widget ${id} not found`;
         log.info(status); 
         return status;   
-    } 
+    }
     
     apmAgent?.setCustomContext({
        widgets: widgets
     });
     let table;
+    let countWidgets = 0;
     widgets?.forEach(async (w) => {
 
         table = actionTable(w.kind);
@@ -89,7 +90,6 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             order by t.id asc`);
         
         let stream : QueryStream;
-
         try{
             stream = client.query(query);
         } catch(err){
@@ -98,6 +98,10 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         }              
         stream.on('end', async () => {
             log.info(`Add activists of Widget ${w.id}`);
+            countWidgets = countWidgets + 1;
+            if(widgetsLength == countWidgets){
+                client.release();
+            }
         });
         stream.on('error', (err: any) => {
             log.error(`${err}`);
