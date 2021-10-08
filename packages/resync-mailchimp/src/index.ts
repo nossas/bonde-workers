@@ -4,6 +4,7 @@ dotenv.config();
 import express from "express";
 import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
 import log from "./dbg";
+import { queueContacts } from "./utils";
 
 const app = express();
 app.use(express.json());
@@ -22,6 +23,19 @@ app.post('/add-resync-mailchimp', async (req, res) => {
         return res.json({
            status: status
         });
+    } catch(err){
+        return res.status(500).json(`${err}`);
+    }   
+});
+
+app.post('/stop-resync-mailchimp', async (req, res) => {
+    try{
+        const status = await queueContacts.getJobCounts();
+        await queueContacts.empty();
+        return res.json({
+            status: `Stoped queue: ${JSON.stringify(status)}`
+         });
+       
     } catch(err){
         return res.status(500).json(`${err}`);
     }   
