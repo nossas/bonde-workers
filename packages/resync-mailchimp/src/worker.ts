@@ -1,4 +1,4 @@
-import { queueContacts, dbClient, actionTable, dbPool } from "./utils";
+import { queueContacts, actionTable, dbPool } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
 import log, { apmAgent } from "./dbg";
 import {Pool, PoolClient } from "pg";

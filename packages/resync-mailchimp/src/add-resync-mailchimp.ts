@@ -1,6 +1,6 @@
 import QueryStream from "pg-query-stream";
 import es from "event-stream";
-import { dbClient, queueContacts, actionTable, dbPool } from "./utils";
+import { queueContacts, actionTable, dbPool } from "./utils";
 import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
@@ -34,14 +34,20 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         apmAgent?.captureError(error);
         throw new Error(`${error}`);
     }
-    
-    pool.connect(async (err: Error, client: PoolClient, done) => {
+
+    pool.connect(async (error: Error, client: PoolClient, done) => {
+
+        if (error){
+            apmAgent?.captureError(error);
+            throw new Error(`${error}`);
+        }
+
         const widgets = await client.query(queryWidget)
             .then((result) => {
                 return result.rows
-            }).catch(error => {
+            }).catch(async(error) => {
                 client.release();
-                pool.end();
+                await pool.end();
                 apmAgent?.captureError(error);
                 throw new Error(`Error search widgets: ${error}`);
             });
@@ -49,7 +55,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         const widgetsLength = widgets.length;
         if (widgetsLength == 0) {
             client.release();
-            pool.end();
+            await pool.end();
             const status = iscommunity ? `No widgets found for community id ${id}`
                 : `Widget ${id} not found`;
             log.info(status);
@@ -109,7 +115,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                 if (widgetsLength == countWidgets) {
                     stream.destroy();
                     done();
-                    pool.end();
+                    await pool.end();
                 }
             });
             stream.on('error', (err: any) => {
@@ -144,8 +150,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                                 removeOnComplete: true,
                             });
                         }
-                        add(data)
-                            .then((data) => {
+                        add(data).then((data) => {
                                 callback(null, JSON.stringify(data));
                             })
                             .catch((err) => {

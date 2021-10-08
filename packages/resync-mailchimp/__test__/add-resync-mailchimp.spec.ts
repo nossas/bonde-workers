@@ -12,7 +12,6 @@ jest.mock('bull');
 const redisMockClient = new Redis();
 const mockQueue = new Queue("resync-contacts-mailchimp", { createClient: () => redisMockClient });
 
-const client = pool.connect();
 utils.dbPool.mockResolvedValue(pool);
 utils.queueContacts = mockQueue;
 const spyonConnect = jest.spyOn(pg, "connect");
@@ -24,8 +23,8 @@ describe("addResyncMailchimpHandle search with widget", () => {
         expect(id).toBe("started to add contacts to the queue");
     });
 
-    it("should call query 1 times", () => {
-         expect(spyonConnect).toBeCalledTimes(1);
+    it("should call connect 1 times", () => {
+        expect(spyonConnect).toBeCalledTimes(1);
     });
     ;
 }); 

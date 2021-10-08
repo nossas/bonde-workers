@@ -3,25 +3,6 @@ import Queue from "bull";
 import { MergeFields } from "./types";
 const url = require('url');
 
-export const dbClient = async () => {
-    const params = url.parse(process.env.DATABASE_URL || "");
-    const auth = params.auth.split(':');
-
-    const config = {
-        user: auth[0],
-        password: auth[1],
-        host: params.hostname,
-        port: params.port,
-        database: params.pathname.split('/')[1],
-        idleTimeoutMillis: 0,
-        connectionTimeoutMillis: 0
-    };
-    const pool = new Pool(config);
-    let client = await pool.connect();
-    return client;
-}
-
-
 export const dbPool = async () => {
     const params = url.parse(process.env.DATABASE_URL || "");
     const auth = params.auth.split(':');
@@ -128,7 +109,7 @@ export const findMergeFields = (kind: string, action_fields: any) => {
         }
     }
 
-    if(!mergeFields.first_name || !mergeFields.last_name){
+    if(!mergeFields.first_name.trim() || !mergeFields.last_name){
         throw new Error('Fields not found!');     
     }
     return mergeFields;
