@@ -42,6 +42,32 @@ app.post('/empty-resync-mailchimp', async (req, res) => {
     }   
 });
 
+app.post('/pause-resync-mailchimp', async (req, res) => {
+    try{
+        await queueContacts.pause(false,true);
+        const status = await queueContacts.getJobCounts();
+        return res.json({
+            status: `Paused queue: ${JSON.stringify(status)}`
+         });
+       
+    } catch(err){
+        return res.status(500).json(`${err}`);
+    }   
+});
+
+app.post('/resume-resync-mailchimp', async (req, res) => {
+    try{
+        await queueContacts.resume();
+        const status = await queueContacts.getJobCounts();
+        return res.json({
+            status: `Resumed queue: ${JSON.stringify(status)}`
+         });
+       
+    } catch(err){
+        return res.status(500).json(`${err}`);
+    }   
+});
+
 app.listen(Number(PORT), "0.0.0.0", () => {
     log.info(`Server listen on port ${PORT}`);
   });
