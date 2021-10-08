@@ -1,7 +1,7 @@
-import { queueContacts, dbClient, actionTable } from "./utils";
+import { queueContacts, dbClient, actionTable, dbPool } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
 import log, { apmAgent } from "./dbg";
-import { PoolClient } from "pg";
+import {Pool, PoolClient } from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -24,22 +24,20 @@ export async function startResyncMailchimp() {
                     mailchimp_syncronization_error_reason = '${msg.replace(/'/g, '"')}'
                     where id = ${job.data.contact.id}`;
         }    
-    
-        let client: PoolClient;
         try{
-            client = await dbClient();
-        } catch (error) {
-            apmAgent?.captureError(error);
-            throw new Error(`Database connection failed`);
-        }
-                
-        await client.query(query).then((result) => {
-            log.info(`updated ${table} id ${job.data.contact.id}`)
-        }).catch((err) => {
+            const pool = await dbPool();
+            const client = await pool.connect();
+            await client.query(query).then((result) => {
+                log.info(`updated ${table} id ${job.data.contact.id}`)
+            });
+            client.release();
+            await pool.end();
+
+        }catch(err) {
             log.error(`Failed update ${err}`);
             apmAgent?.captureError(err);
-        });
-        client.release();
+        }
+ 
     });
 }
 
