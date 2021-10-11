@@ -36,11 +36,26 @@ export default async (contact: Contact): Promise<any> => {
     const listID = mailchimp_list_id;
     const path = `/lists/${listID}/members/${hash(contact.email)}`;
     
-    //search fields from actions
-    if (!contact.first_name || !contact.last_name) {    
-        const mergeFields = findMergeFields(contact.kind, contact.action_fields); 
-        contact.first_name = contact.first_name || mergeFields.first_name;
-        contact.last_name = contact.last_name || mergeFields.last_name;
+    //search fields
+    if (!contact.first_name || !contact.last_name) {   
+        //search fields from actions 
+        const mergeFields = findMergeFields(contact.kind, contact.action_fields);
+        
+        //search fields from mailchimp
+        if (!mergeFields.first_name || !mergeFields.last_name) {
+            
+            await client.get(path)
+            .then((result) => {
+                console.log(`${JSON.stringify(result)}`) 
+                mergeFields.first_name = mergeFields.first_name ||  result.merge_fields.FNAME;
+                mergeFields.last_name = mergeFields.last_name.trim() ||  result.merge_fields.LNAME; 
+            })
+            .catch((err)=> {
+                throw new Error(`Cannot create member without merge_fields! ${err}`);   
+            });  
+        }
+      contact.first_name = contact.first_name || mergeFields.first_name;
+      contact.last_name = contact.last_name || mergeFields.last_name;
     }
 
     const body: any = {

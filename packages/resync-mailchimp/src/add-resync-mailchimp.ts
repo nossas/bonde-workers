@@ -90,6 +90,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             c.mailchimp_api_key , 
             c.mailchimp_list_id,
             t.id,
+            t.created_at,
             t.${table?.action_fields} action_fields
             from
             ${table?.name} t
@@ -99,7 +100,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
             where w.id = ${w.id} 
-            order by t.id asc`);
+            order by t.created_at asc`);
 
 
             let stream: QueryStream;
