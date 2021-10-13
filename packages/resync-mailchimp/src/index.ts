@@ -67,6 +67,57 @@ app.post('/resume-resync-mailchimp', async (req, res) => {
     }   
 });
 
+app.post('/status-resync-mailchimp', async (req, res) => {
+    if (!req.body.input || !req.body.input.id) {
+        log.error(`Invalid request ${req.body}`);
+        return res.status(404).json({ error: "Invalid request" });
+    } 
+    const { iscommunity, id } = req.body.input;
+    try{
+      
+        let countWaiting = 0 ,countFailed = 0 , countActive = 0, countCompleted = 0;
+        const waiting = await queueContacts.getWaiting();
+        const failed = await queueContacts.getFailed();
+        const active = await queueContacts.getActive();
+        const completed = await queueContacts.getCompleted();
+        const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}ID`;
+        waiting.forEach((j:any)=>{
+            if (j.id.indexOf(prefix) >= 0) {
+                countWaiting++;
+            } 
+        })
+
+        active.forEach((j:any)=>{
+            if (j.id.indexOf(prefix) >= 0) {
+                countActive++;
+            } 
+        })
+
+        failed.forEach((j:any)=>{
+            if (j.id.indexOf(prefix) >= 0) {
+                countFailed++;
+            } 
+        })
+
+        completed.forEach((j:any)=>{
+            if (j.id.indexOf(prefix) >= 0) {
+                countCompleted++;
+            } 
+        })
+        return res.json({
+            status: `Resumed queue: ${JSON.stringify({
+                completed: countCompleted,
+                waiting: countWaiting,
+                paused: countFailed,
+                active: countActive
+            })}`
+         });
+       
+    } catch(err){
+        return res.status(500).json(`${err}`);
+    }   
+});
+
 app.post('/remove-resync-mailchimp', async (req, res) => {
     if (!req.body.input || !req.body.input.id) {
         log.error(`Invalid request ${req.body}`);
