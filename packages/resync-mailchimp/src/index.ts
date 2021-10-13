@@ -5,7 +5,6 @@ import express from "express";
 import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
 import log from "./dbg";
 import { queueContacts } from "./utils";
-import { Queue } from "bull";
 
 const app = express();
 app.use(express.json());
@@ -75,37 +74,35 @@ app.post('/remove-resync-mailchimp', async (req, res) => {
     }     
     const { iscommunity, id } = req.body.input;
     try{
-        const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}`;
-              
-        const getKeys = async (q: Queue) => {
+        const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}ID`;
+        const getKeys = async (q:any) => {
             const multi = q.multi();
             multi.keys('*');
             const keys = await multi.exec();
-            console.log(keys);
             return keys[0][1]
           }
           
-          const filterQueueKeys = (q: any , keys: any, name:string) => {
+        const filterQueueKeys = (q:any, keys:any) => {
             const prefix = `${q.keyPrefix}:${q.name}`;
-            return keys.filter((k:any) => (k.includes(prefix)));
-          }
+            return keys.filter((k:any) => k.includes(prefix));
+        }
           
-          const emptyQueue = async (q: Queue, name: string) => {  
-            const keys = await getKeys(q);
-            const queueKeys = await filterQueueKeys(q, keys, name);
+        const deleteKeys = async (q:any, keys:any) => {
             const multi = q.multi();
-            keys.forEach((k: any) => {
-              if(k.indexOf(name) > 0){
-                console.log(k)  
-                multi.del(k);
-              }
-            }); 
-          }
-          
-        await emptyQueue(queueContacts,prefix)
+            keys.forEach((k:any) => {
+              
+              if (k.indexOf(prefix) >= 0) { 
+                multi.del(k)}
+            });
+            await multi.exec();
+        }   
+        const keys = await getKeys(queueContacts);
+        const queueKeys = filterQueueKeys(queueContacts, keys);
+        await deleteKeys(queueContacts, queueKeys);
+
         const status = await queueContacts.getJobCounts();
-        return res.json({
-            status: `Remove jobs ${prefix} queue: ${JSON.stringify(status)}`
+         return res.json({
+            status: `Remove jobs queue: ${JSON.stringify(status)}`
          });
         
     } catch(err){
