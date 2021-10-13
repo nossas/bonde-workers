@@ -23,7 +23,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
     and b.id = w.block_id  
     and m.community_id  = c.id 
     and b.mobilization_id  = m.id
-    and w.kind in ('form','donation','pressure-phone','pressure')`
+    and w.kind in ('form','donation','pressure-phone','pressure') order by w.created_at asc`
         : `select id, kind from widgets where id = ${id} and kind in ('form','donation','pressure-phone','pressure')`);
 
     let pool: Pool;
@@ -34,7 +34,8 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         apmAgent?.captureError(error);
         throw new Error(`${error}`);
     }
-
+    const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}`; 
+ 
     pool.connect(async (error: Error, client: PoolClient, done) => {
 
         if (error){
@@ -102,7 +103,6 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             where w.id = ${w.id} 
             order by t.created_at asc`);
 
-
             let stream: QueryStream;
             try {
                 stream = client.query(query);
@@ -149,6 +149,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                             }
                             return await queueContacts.add({ contact }, {
                                 removeOnComplete: true,
+                                jobId: prefix + 'ID' + contact.id
                             });
                         }
                         add(data).then((data) => {
@@ -163,5 +164,6 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             );
         });
     });
+   
     return "started to add contacts to the queue";
 }
