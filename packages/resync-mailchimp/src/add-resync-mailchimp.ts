@@ -148,7 +148,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
                                 action_fields: data.action_fields
                             }
                             return await queueContacts.add({ contact }, {
-                                removeOnComplete: true,
+                                removeOnComplete: false,
                                 jobId: prefix + 'ID' + contact.id
                             });
                         }

@@ -5,6 +5,7 @@ import express from "express";
 import { addResyncMailchimpHandle } from "./add-resync-mailchimp"
 import log from "./dbg";
 import { queueContacts } from "./utils";
+import { Job }  from "bull";
 
 const app = express();
 app.use(express.json());
@@ -118,6 +119,38 @@ app.post('/status-resync-mailchimp', async (req, res) => {
     }   
 });
 
+app.post('/last-completed-resync-mailchimp', async (req, res) => {
+
+    if (!req.body.input || !req.body.input.id) {
+        log.error(`Invalid request ${req.body}`);
+        return res.status(404).json({ error: "Invalid request" });
+    }     
+    const { iscommunity, id } = req.body.input;
+    const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}ID`;
+    try{
+        const completed = await queueContacts.getCompleted();
+        completed[0].finishedOn
+        const lastJob = completed.reduce(function (a:Job, b: Job) { 
+            if(a.finishedOn && b.finishedOn){
+                return a.finishedOn > b.finishedOn ? a : b;
+            }
+            return b
+        });
+        
+        let date;
+        if(lastJob.finishedOn){
+             date = new Date(lastJob.finishedOn);
+        }
+
+        return res.json({
+           date: date
+        });
+    } catch(err){
+        return res.status(500).json(`${err}`);
+    }   
+});
+
+//WIP - dont use this endpoint
 app.post('/remove-resync-mailchimp', async (req, res) => {
     if (!req.body.input || !req.body.input.id) {
         log.error(`Invalid request ${req.body}`);
