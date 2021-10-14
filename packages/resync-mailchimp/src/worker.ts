@@ -15,7 +15,7 @@ export async function startResyncMailchimp() {
             const date = await mailchimp(job.data.contact);
             query = `update ${table} set 
                     mailchimp_syncronization_at = '${date.updated_at}'
-                    where id = ${job.data.contact.id}`;
+                    where id = ${job.data.contact.id}`;         
         }catch(err) {
             log.error(`Failed resync ${err}`);
             apmAgent?.captureError(err);
@@ -23,6 +23,7 @@ export async function startResyncMailchimp() {
             query = `update ${table} set 
                     mailchimp_syncronization_error_reason = '${msg.replace(/'/g, '"')}'
                     where id = ${job.data.contact.id}`;
+            await job.moveToFailed(new Error(`${err}`));              
         }    
         try{
             const pool = await dbPool();

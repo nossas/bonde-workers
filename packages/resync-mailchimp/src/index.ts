@@ -108,7 +108,7 @@ app.post('/status-resync-mailchimp', async (req, res) => {
             status: `Resumed queue: ${JSON.stringify({
                 completed: countCompleted,
                 waiting: countWaiting,
-                paused: countFailed,
+                failed: countFailed,
                 active: countActive
             })}`
          });
@@ -140,10 +140,10 @@ app.post('/remove-resync-mailchimp', async (req, res) => {
           
         const deleteKeys = async (q:any, keys:any) => {
             const multi = q.multi();
-            keys.forEach((k:any) => {
+            keys.forEach(async (k:any) => {
               
               if (k.indexOf(prefix) >= 0) { 
-                multi.del(k)}
+                await multi.del(k)}
             });
             await multi.exec();
         }   

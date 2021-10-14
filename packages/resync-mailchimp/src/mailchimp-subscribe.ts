@@ -1,6 +1,6 @@
 import Mailchimp from 'mailchimp-api-v3';
 import crypto from 'crypto';
-import { Contact, MergeFields, Tag, TagFields } from "./types";
+import { Contact, Tag, TagFields } from "./types";
 import { findMergeFields } from "./utils";
 
 export const tags = (fields: TagFields): Tag[] => {
@@ -46,7 +46,6 @@ export default async (contact: Contact): Promise<any> => {
             
             await client.get(path)
             .then((result) => {
-                console.log(`${JSON.stringify(result)}`) 
                 mergeFields.first_name = mergeFields.first_name ||  result.merge_fields.FNAME;
                 mergeFields.last_name = mergeFields.last_name.trim() ||  result.merge_fields.LNAME; 
             })
