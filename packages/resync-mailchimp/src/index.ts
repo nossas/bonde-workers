@@ -109,13 +109,11 @@ app.post('/status-resync-mailchimp', async (req, res) => {
             } 
         })
         return res.json({
-            status: `Resumed queue: ${JSON.stringify({
                 completed: countCompleted,
                 waiting: countWaiting,
                 failed: countFailed,
                 active: countActive
-            })}`
-         });
+             });
        
     } catch(err){
         return res.status(500).json(`${err}`);
