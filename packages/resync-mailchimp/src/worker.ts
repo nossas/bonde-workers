@@ -12,10 +12,12 @@ export async function startResyncMailchimp() {
         const table =  actionTable(job.data.contact.kind)?.name;
         let query; 
         try {
+            
             const date = await mailchimp(job.data.contact);
             query = `update ${table} set 
                     mailchimp_syncronization_at = '${date.updated_at}'
-                    where id = ${job.data.contact.id}`;         
+                    where id = ${job.data.contact.id}`;   
+            log.info(`Resync contact: ${JSON.stringify(job.data.contact)}`);      
         }catch(err) {
             log.error(`Failed resync ${err}`);
             apmAgent?.captureError(err);
