@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
     "dev-worker": "ts-node-dev src/worker.ts",
+    "dev-clean": "ts-node-dev src/clean.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "worker": "node dist/src/worker.js",
+    "clean": "node dist/src/clean.ts",
     "test": "NODE_ENV=test jest --coverage ."
   },
   "dependencies": {

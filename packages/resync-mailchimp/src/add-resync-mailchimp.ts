@@ -1,24 +1,17 @@
 import QueryStream from "pg-query-stream";
 import es from "event-stream";
-import { dbClient, queueContacts, actionTable } from "./utils";
-import { PoolClient } from "pg";
+import { queueContacts, actionTable, dbPool } from "./utils";
+import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
 export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
-    
+
     apmAgent?.setCustomContext({
         id,
         iscommunity
     });
-    let client: PoolClient; 
-    try{
-        client = await dbClient();
-    } catch (error) {
-        log.error(`${error}`);
-        apmAgent?.captureError(error);
-        throw new Error(`Database connection failed`);
-    }
+
     const queryWidget = (iscommunity ? `select w.id , 
     w.kind
     from widgets w 
@@ -30,33 +23,60 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
     and b.id = w.block_id  
     and m.community_id  = c.id 
     and b.mobilization_id  = m.id
-    and w.kind in ('form','donation','pressure-phone','pressure')`
-        : `select id, kind from widgets where id = ${id}`);
+    and w.kind in ('form','donation','pressure-phone','pressure') order by w.created_at asc`
+        : `select id, kind from widgets where id = ${id} and kind in ('form','donation','pressure-phone','pressure')`);
 
-    const widgets = await client.query(queryWidget)
-        .then((result) => {
-            return result.rows
-        }).catch(error => {
+    let pool: Pool;
+    try {
+        pool = await dbPool();
+    } catch (error) {
+        log.error(`${error}`);
+        apmAgent?.captureError(error);
+        throw new Error(`${error}`);
+    }
+    const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}`; 
+ 
+    pool.connect(async (error: Error, client: PoolClient, done) => {
+
+        if (error){
             apmAgent?.captureError(error);
-            throw new Error(`Error search widgets: ${error}`);        
+            throw new Error(`${error}`);
+        }
+
+        const widgets = await client.query(queryWidget)
+            .then((result) => {
+                return result.rows
+            }).catch(async(error) => {
+                client.release();
+                await pool.end();
+                apmAgent?.captureError(error);
+                throw new Error(`Error search widgets: ${error}`);
+            });
+
+        const widgetsLength = widgets.length;
+        if (widgetsLength == 0) {
+            client.release();
+            await pool.end();
+            const status = iscommunity ? `No widgets found for community id ${id}`
+                : `Widget ${id} not found`;
+            log.info(status);
+            return status;
+        }
+
+        apmAgent?.setCustomContext({
+            widgets: widgets
         });
-   
-    if (widgets.length == 0){
-        client.release();
-        const status = iscommunity? `No widgets found for community id ${id}` 
-                               : `Widget ${id} not found`;
-        log.info(status); 
-        return status;   
-    }       
+        let table;
+        let countWidgets = 0;
 
-    let table;
-    widgets?.forEach(async (w) => {
+        widgets?.forEach(async (w) => {
 
-        table = actionTable(w.kind);
-        log.info(`Search contacts widget ${ JSON.stringify(w)}`);
-        const query = new QueryStream(`select
-            a.first_name activist_first_name,
-            a.last_name activist_last_name, 
+            table = actionTable(w.kind);
+
+            log.info(`Search contacts widget ${JSON.stringify(w)}`);
+            const query = new QueryStream(`select
+            trim(a.first_name) activist_first_name,
+            trim(a.last_name) activist_last_name, 
             a.city activist_city, 
             a.state activist_state, 
             a.phone activist_phone,       
@@ -70,69 +90,80 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             c."name" community_name, 
             c.mailchimp_api_key , 
             c.mailchimp_list_id,
-            t.id
+            t.id,
+            t.created_at,
+            t.${table?.action_fields} action_fields
             from
-            ${table} t 
+            ${table?.name} t
             left join activists a on  a.id = t.activist_id
             left join widgets w on t.widget_id = w.id
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where w.id = ${w.id}
-            order by t.id asc`);
-        
-        let stream : QueryStream;
-        try{
-            stream = client.query(query);
-        } catch(err){
-            apmAgent?.captureError(err);
-            throw new Error(`${err}`)   
-        }              
-        stream.on('end', async () => {
-            log.info(`Add ${stream._result.rowCount} activists of Widget ${w.id}`);
-        });
-        stream.on('error', (err: any) => {
-            log.error(`${err}`);
-            apmAgent?.captureError(err);
-        });
-                            
-        stream.pipe(JSONStream.stringify())
-        .pipe(JSONStream.parse("*"))
-        .pipe(
-            es.map((data: any, callback: any) => {
-                let add = async (data: any) => {                
-                    const contact = {
-                            id: data.id,
-                            first_name: data.activist_first_name,
-                            last_name: data.activist_last_name,
-                            email: data.activist_email,
-                            state: data.activist_state,
-                            phone: data.activist_phone,
-                            city: data.activist_city,
-                            widget_id: data.widget_id,
-                            kind: data.widget_kind,
-                            mobilization_id: data.mobilization_id,
-                            mobilization_name: data.mobilization_name,
-                            community_id: data.community_id,
-                            community_name: data.community_name,
-                            mailchimp_api_key: data.mailchimp_api_key,
-                            mailchimp_list_id: data.mailchimp_list_id
-                        }
-                        return await queueContacts.add({ contact }, {
-                            removeOnComplete: true,
-                        });    
-                    }
-                    add(data)
-                    .then((data) => {
-                        callback(null, JSON.stringify(data));
-                    })
-                    .catch((err) => {
-                        log.error(`ERROR ADD QUEUE: ${err}`);
-                        apmAgent?.captureError(err);
-                    });
+            where w.id = ${w.id} 
+            order by t.created_at asc`);
+
+            let stream: QueryStream;
+            try {
+                stream = client.query(query);
+            } catch (err) {
+                apmAgent?.captureError(err);
+                throw new Error(`${err}`)
+            }
+            stream.on('end', async () => {
+                log.info(`Add activists of Widget ${w.id}`);
+                countWidgets = countWidgets + 1;
+                if (widgetsLength == countWidgets) {
+                    stream.destroy();
+                    done();
+                    await pool.end();
                 }
-            )
-        );        
+            });
+            stream.on('error', (err: any) => {
+                log.error(`${err}`);
+                apmAgent?.captureError(err);
+            });
+
+            stream.pipe(JSONStream.stringify())
+                .pipe(JSONStream.parse("*"))
+                .pipe(
+                    es.map((data: any, callback: any) => {
+                        let add = async (data: any) => {
+                            const contact = {
+                                id: data.id,
+                                first_name: data.activist_first_name,
+                                last_name: data.activist_last_name,
+                                email: data.activist_email,
+                                state: data.activist_state,
+                                phone: data.activist_phone,
+                                city: data.activist_city,
+                                widget_id: data.widget_id,
+                                kind: data.widget_kind,
+                                mobilization_id: data.mobilization_id,
+                                mobilization_name: data.mobilization_name,
+                                community_id: data.community_id,
+                                community_name: data.community_name,
+                                mailchimp_api_key: data.mailchimp_api_key,
+                                mailchimp_list_id: data.mailchimp_list_id,
+                                action_fields: data.action_fields
+                            }
+                            return await queueContacts.add({ contact }, {
+                                removeOnComplete: false,
+                                jobId: prefix + 'ID' + contact.id
+                            });
+                        }
+                        add(data).then((data) => {
+                                callback(null, JSON.stringify(data));
+                            })
+                            .catch((err) => {
+                                log.error(`ERROR ADD QUEUE: ${err}`);
+                                apmAgent?.captureError(err);
+                            });
+                    }
+                )
+            );
+        });
     });
+   
     return "started to add contacts to the queue";
 }

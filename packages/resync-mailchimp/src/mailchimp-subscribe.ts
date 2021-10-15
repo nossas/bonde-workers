@@ -1,6 +1,7 @@
 import Mailchimp from 'mailchimp-api-v3';
 import crypto from 'crypto';
 import { Contact, Tag, TagFields } from "./types";
+import { findMergeFields } from "./utils";
 
 export const tags = (fields: TagFields): Tag[] => {
 
@@ -33,16 +34,39 @@ export default async (contact: Contact): Promise<any> => {
     };
     const client = new Mailchimp(mailchimp_api_key || '');
     const listID = mailchimp_list_id;
+    const path = `/lists/${listID}/members/${hash(contact.email)}`;
+    
+    //search fields
+    if (!contact.first_name || !contact.last_name) {   
+        //search fields from actions 
+        const mergeFields = findMergeFields(contact.kind, contact.action_fields);
+        
+        //search fields from mailchimp
+        if (!mergeFields.first_name || !mergeFields.last_name) {
+            
+            await client.get(path)
+            .then((result) => {
+                mergeFields.first_name = mergeFields.first_name ||  result.merge_fields.FNAME;
+                mergeFields.last_name = mergeFields.last_name.trim() ||  result.merge_fields.LNAME; 
+            })
+            .catch((err)=> {
+                throw new Error(`Cannot create member without merge_fields! ${err}`);   
+            });  
+        }
+      contact.first_name = contact.first_name || mergeFields.first_name;
+      contact.last_name = contact.last_name || mergeFields.last_name;
+    }
+
     const body: any = {
         "email_address": contact.email,
         "status": "subscribed",
         "merge_fields": {
-            "FNAME": contact.first_name || "SEM NOME",
-            "LNAME": contact.last_name || "SEM SOBRENOME"
+            "FNAME": contact.first_name,
+            "LNAME": contact.last_name
         }
     }
-
-    if (contact.city) {
+ 
+   if (contact.city) {
         body.merge_fields['CITY'] = contact.city;
     }
     if (contact.phone) {
@@ -52,7 +76,6 @@ export default async (contact: Contact): Promise<any> => {
         body.merge_fields['STATE'] = contact.state;
     }
 
-    const path = `/lists/${listID}/members/${hash(contact.email)}`;
     // Create or Update Member
     const response = await client.put({ path, body });
     // Add tags
