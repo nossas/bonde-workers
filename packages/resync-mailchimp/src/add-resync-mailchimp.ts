@@ -34,8 +34,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         apmAgent?.captureError(error);
         throw new Error(`${error}`);
     }
-    const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}`; 
- 
+    
     pool.connect(async (error: Error, client: PoolClient, done) => {
 
         if (error){
@@ -72,7 +71,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         widgets?.forEach(async (w) => {
 
             table = actionTable(w.kind);
-
+            const prefix = iscommunity? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
             log.info(`Search contacts widget ${JSON.stringify(w)}`);
             const query = new QueryStream(`select
             trim(a.first_name) activist_first_name,
