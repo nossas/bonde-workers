@@ -113,7 +113,7 @@ app.post('/status-resync-mailchimp', async (req, res) => {
                 waiting: waiting.length,
                 failed: failed.length,
                 active: active.length,
-                last_sync: date
+                last_sync: date? date: ""
             });
        
     } catch(err){
