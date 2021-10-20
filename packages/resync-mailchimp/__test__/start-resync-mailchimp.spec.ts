@@ -1,4 +1,4 @@
-import { addResyncMailchimpHandle } from "../src/add-resync-mailchimp";
+import { startResyncMailchimpHandle } from "../src/start-resync-mailchimp";
 import pgmock, { getPool } from 'pgmock2';
 import Redis from "ioredis-mock";
 import Queue from "bull";
@@ -19,7 +19,7 @@ const spyonConnect = jest.spyOn(pg, "connect");
 describe("addResyncMailchimpHandle search with widget", () => {
 
     it("should return id queue", async () => {
-        const id = await addResyncMailchimpHandle(1234, false);
+        const id = await startResyncMailchimpHandle(1234, false);
         expect(id).toBe("started to add contacts to the queue");
     });
 

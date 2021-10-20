@@ -5,7 +5,7 @@ import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
-export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
+export async function startResyncMailchimpHandle(id: number, iscommunity: boolean) {
 
     apmAgent?.setCustomContext({
         id,
