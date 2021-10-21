@@ -18,9 +18,9 @@ app.post('/start-resync-mailchimp', async (req, res) => {
         log.error(`Invalid request ${req.body}`);
         return res.status(404).json({ error: "Invalid request" });
     }     
-    const { iscommunity, id } = req.body.input;
+    const { is_community, id } = req.body.input;
     try{
-        const status= await startResyncMailchimpHandle(id, iscommunity);
+        const status= await startResyncMailchimpHandle(id, is_community);
         return res.json({
            status: status
         });
@@ -76,8 +76,8 @@ app.post('/status-resync-mailchimp', async (req, res) => {
         log.error(`Invalid request ${req.body}`);
         return res.status(404).json({ error: "Invalid request" });
     } 
-    const { iscommunity, id } = req.body.input;
-    const prefix = iscommunity? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
+    const { is_community, id } = req.body.input;
+    const prefix = is_community? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
 
     try{
          
@@ -127,9 +127,9 @@ app.post('/remove-resync-mailchimp', async (req, res) => {
         log.error(`Invalid request ${req.body}`);
         return res.status(404).json({ error: "Invalid request" });
     }     
-    const { iscommunity, id } = req.body.input;
+    const { is_community, id } = req.body.input;
     try{
-        const prefix = iscommunity? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
+        const prefix = is_community? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
         const getKeys = async (q:any) => {
             const multi = q.multi();
             multi.keys('*');

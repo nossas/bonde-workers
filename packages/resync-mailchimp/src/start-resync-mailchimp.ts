@@ -5,14 +5,14 @@ import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
-export async function startResyncMailchimpHandle(id: number, iscommunity: boolean) {
+export async function startResyncMailchimpHandle(id: number, is_community: boolean) {
 
     apmAgent?.setCustomContext({
         id,
-        iscommunity
+        is_community
     });
 
-    const queryWidget = (iscommunity ? `select w.id , 
+    const queryWidget = (is_community ? `select w.id , 
     w.kind
     from widgets w 
         left join blocks b on w.block_id = b.id
@@ -56,7 +56,7 @@ export async function startResyncMailchimpHandle(id: number, iscommunity: boolea
         if (widgetsLength == 0) {
             client.release();
             await pool.end();
-            const status = iscommunity ? `No widgets found for community id ${id}`
+            const status = is_community ? `No widgets found for community id ${id}`
                 : `Widget ${id} not found`;
             log.info(status);
             return status;
@@ -71,7 +71,7 @@ export async function startResyncMailchimpHandle(id: number, iscommunity: boolea
         widgets?.forEach(async (w) => {
 
             table = actionTable(w.kind);
-            const prefix = iscommunity? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
+            const prefix = is_community? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
             log.info(`Search contacts widget ${JSON.stringify(w)}`);
             const query = new QueryStream(`select
             trim(a.first_name) activist_first_name,
