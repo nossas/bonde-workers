@@ -107,13 +107,27 @@ app.post('/status-resync-mailchimp', async (req, res) => {
              date = new Date(lastJob.finishedOn);
             }
         }
-
+        
+        let status = 'Parada';
+        if (active.length == 0) {
+            if (waiting.length > 0) {
+               status = 'Em espera'
+            } else{
+                if ((completed.length >0 || failed.length > 0)){
+                    status = 'Finalizada';
+                }
+            }
+        } else {
+            status = 'Em andamento';
+        }
+        
         return res.json({
                 completed: completed.length,
                 waiting: waiting.length,
                 failed: failed.length,
                 active: active.length,
-                last_sync: date? date: ""
+                last_sync: date? date: "",
+                status: status
             });
        
     } catch(err){
