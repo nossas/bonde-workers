@@ -6,6 +6,7 @@ import { startResyncMailchimpHandle } from "./start-resync-mailchimp"
 import log from "./dbg";
 import { queueContacts } from "./utils";
 import { Job }  from "bull";
+import moment from "moment";
 
 const app = express();
 app.use(express.json());
@@ -78,7 +79,7 @@ app.post('/status-resync-mailchimp', async (req, res) => {
     } 
     const { is_community, id } = req.body.input;
     const prefix = is_community? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
-
+    
     try{
          
         const allCompleted = await queueContacts.getCompleted();
@@ -120,13 +121,13 @@ app.post('/status-resync-mailchimp', async (req, res) => {
         } else {
             status = 'Em andamento';
         }
-        
+
         return res.json({
                 completed: completed.length,
                 waiting: waiting.length,
                 failed: failed.length,
                 active: active.length,
-                last_sync: date? date: "",
+                last_sync: date? moment(date).format('DD/MM/YYYY hh:mm:ss'): "",
                 status: status
             });
        
