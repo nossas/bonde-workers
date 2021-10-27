@@ -80,5 +80,8 @@ export default async (contact: Contact): Promise<any> => {
     const response = await client.put({ path, body });
     // Add tags
     await client.post({ path: path + '/tags', body: { tags: tags(tagFields) } });
-    return { updated_at: response.last_changed };
+    
+    return {    updated_at: response.last_changed,
+                mailchimp_status: response.status.toLowerCase()
+           };
 };
