@@ -82,6 +82,6 @@ export default async (contact: Contact): Promise<any> => {
     await client.post({ path: path + '/tags', body: { tags: tags(tagFields) } });
     
     return {    updated_at: response.last_changed,
-                mailchimp_status: response.status.toLowerCase()
+                mailchimp_status: response.status?.toLowerCase()
            };
 };

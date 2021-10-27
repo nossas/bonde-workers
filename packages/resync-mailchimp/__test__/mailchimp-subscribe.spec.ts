@@ -103,7 +103,7 @@ describe('mailchimp function tests', () => {
     });
 
     it('merge fields name', async () => {
-        mockPut.mockResolvedValue({ last_changed: '' });
+        mockPut.mockResolvedValue({ last_changed: '', mailchimp_status: '' });
 
         const { mailchimp_api_key, mailchimp_list_id } = { ...contact_2 };
 
@@ -126,7 +126,7 @@ describe('mailchimp function tests', () => {
     });
 
     it('merge_fields city , phone, state', async () => {
-        mockPut.mockResolvedValue({ last_changed: '' });
+        mockPut.mockResolvedValue({ last_changed: '', mailchimp_status: '' });
         const { mailchimp_api_key, mailchimp_list_id } = { ...contact };
         const expected = {
             path: `/lists/${mailchimp_list_id}/members/${hash(contact.email)}`,
@@ -150,7 +150,7 @@ describe('mailchimp function tests', () => {
     });
 
     it('merge fields name from donations fields', async () => {
-        mockPut.mockResolvedValue({ last_changed: '' });
+        mockPut.mockResolvedValue({ last_changed: '', mailchimp_status: '' });
 
         const { mailchimp_api_key, mailchimp_list_id } = { ...contact_3 };
 
