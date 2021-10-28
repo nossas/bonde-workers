@@ -100,7 +100,7 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
             where w.id = ${w.id} 
-            and (t.mailchimp_status is null or t.mailchimp_status not like 'archived')
+            and (t.mailchimp_status is null or t.mailchimp_status <> 'archived')
             and (select count(*) from ${table?.name} t2 where t2.activist_id = t.activist_id 
                  and t2.widget_id = t.widget_id  and t2.mailchimp_status = 'archived') = 0
             order by t.created_at asc`);
