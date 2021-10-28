@@ -5,14 +5,14 @@ import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 const JSONStream = require('JSONStream');
 
-export async function addResyncMailchimpHandle(id: number, iscommunity: boolean) {
+export async function startResyncMailchimpHandle(id: number, is_community: boolean) {
 
     apmAgent?.setCustomContext({
         id,
-        iscommunity
+        is_community
     });
 
-    const queryWidget = (iscommunity ? `select w.id , 
+    const queryWidget = (is_community ? `select w.id , 
     w.kind
     from widgets w 
         left join blocks b on w.block_id = b.id
@@ -34,8 +34,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         apmAgent?.captureError(error);
         throw new Error(`${error}`);
     }
-    const prefix = iscommunity? `COMMUNITY${id}`: `WIDGET${id}`; 
- 
+    
     pool.connect(async (error: Error, client: PoolClient, done) => {
 
         if (error){
@@ -57,7 +56,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         if (widgetsLength == 0) {
             client.release();
             await pool.end();
-            const status = iscommunity ? `No widgets found for community id ${id}`
+            const status = is_community ? `No widgets found for community id ${id}`
                 : `Widget ${id} not found`;
             log.info(status);
             return status;
@@ -72,7 +71,7 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
         widgets?.forEach(async (w) => {
 
             table = actionTable(w.kind);
-
+            const prefix = is_community? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
             log.info(`Search contacts widget ${JSON.stringify(w)}`);
             const query = new QueryStream(`select
             trim(a.first_name) activist_first_name,
@@ -101,6 +100,9 @@ export async function addResyncMailchimpHandle(id: number, iscommunity: boolean)
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
             where w.id = ${w.id} 
+            and (t.mailchimp_status is null or t.mailchimp_status <> 'archived')
+            and (select count(*) from ${table?.name} t2 where t2.activist_id = t.activist_id 
+                 and t2.widget_id = t.widget_id  and t2.mailchimp_status = 'archived') = 0
             order by t.created_at asc`);
 
             let stream: QueryStream;

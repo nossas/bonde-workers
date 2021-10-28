@@ -1,7 +1,6 @@
 import { queueContacts, actionTable, dbPool } from "./utils";
 import mailchimp from "./mailchimp-subscribe";
 import log, { apmAgent } from "./dbg";
-import {Pool, PoolClient } from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,11 +12,11 @@ export async function startResyncMailchimp() {
         let query; 
         try {
             
-            const date = await mailchimp(job.data.contact);
-            query = `update ${table} set 
-                    mailchimp_syncronization_at = '${date.updated_at}'
+            const response = await mailchimp(job.data.contact);
+            query = `update ${table} set mailchimp_status= '${response.mailchimp_status}', 
+                    mailchimp_syncronization_at = '${response.updated_at}'
                     where id = ${job.data.contact.id}`;   
-            log.info(`Resync contact: ${JSON.stringify(job.data.contact)}`);      
+            log.info(`Resync contact: ${job.data.contact.email} status: ${response.mailchimp_status}`);      
         }catch(err) {
             log.error(`Failed resync ${err}`);
             apmAgent?.captureError(err);
