@@ -1,7 +1,7 @@
 
 import { queueContacts } from "./utils";
 import { Job }  from "bull";
-import moment from "moment-timezone";
+import  { format } from "date-fns";
 
 
 export const statusResyncMailchimpHandle = async (prefix: string) => {
@@ -44,13 +44,13 @@ export const statusResyncMailchimpHandle = async (prefix: string) => {
     } else {
         status = 'Em andamento';
     }
-    
+   
     return {
             completed: completed.length,
             waiting: waiting.length,
             failed: failed.length,
             active: active.length,
-            last_sync: date? moment(date).tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm:ss'): "",
+            last_sync: date? format(date, 'dd/MM/yyyy HH:mm:ss'): "",
             status: status
         };
 }
