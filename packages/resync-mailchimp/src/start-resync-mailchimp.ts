@@ -3,6 +3,7 @@ import es from "event-stream";
 import { queueContacts, actionTable, dbPool } from "./utils";
 import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
+import { nextDay } from "date-fns";
 const JSONStream = require('JSONStream');
 
 export async function startResyncMailchimpHandle(id: number, is_community: boolean) {
@@ -19,12 +20,9 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         left join mobilizations m on b.mobilization_id = m.id
         left join communities c on m.community_id = c.id
     where 
-    c.id = ${id}
-    and b.id = w.block_id  
-    and m.community_id  = c.id 
-    and b.mobilization_id  = m.id
-    and w.kind in ('form','donation','pressure-phone','pressure') order by w.created_at asc`
-        : `select id, kind from widgets where id = ${id} and kind in ('form','donation','pressure-phone','pressure')`);
+    c.id = ${id} order by w.created_at asc
+    order by w.created_at asc`
+        : `select id, kind from widgets where id = ${id}`);
 
     let pool: Pool;
     try {
@@ -63,14 +61,44 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         }
 
         apmAgent?.setCustomContext({
-            widgets: widgets
+            widgetsCount: widgetsLength 
         });
-        let table;
+
         let countWidgets = 0;
 
         widgets?.forEach(async (w) => {
 
+            let table;
             table = actionTable(w.kind);
+            if(!table) {
+                const queryAction = `select 
+                (select count(1) from activist_pressures ap where ap.widget_id = w.id) as pressure,
+                (select count(1) from form_entries f where f.widget_id = w.id) as form,
+                (select count(1) from donations d where d.widget_id = w.id) as donation
+                from widgets w where w.id = ${w.id}`
+                
+                const countActions = await client.query(queryAction)
+                .then((result) => {
+                    return result.rows
+                }).catch(async(error) => {
+                    client.release();
+                    await pool.end();
+                    apmAgent?.captureError(error);
+                    throw new Error(`Error search action kind: ${error}`);
+                });
+                if (countActions[0].pressure > 0) {
+                    table = {name: 'activist_pressures', action_fields: 'form_data'};
+                } else if (countActions[0].donation >0 ) {
+                    table =  { name: 'donations', action_fields: 'customer' };
+                } else if (countActions[0].form >0 ) {
+                    table = { name: 'form_entries', action_fields: 'fields'};
+                } else {
+                    const msg = `Not found action kind for widget ${w.id}`
+                    log.info(msg);
+                    return;
+                } 
+            }
+
             const prefix = is_community? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
             log.info(`Search contacts widget ${JSON.stringify(w)}`);
             const query = new QueryStream(`select
@@ -91,7 +119,8 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             c.mailchimp_list_id,
             t.id,
             t.created_at,
-            t.${table?.action_fields} action_fields
+            t.${table?.action_fields} action_fields,
+            '${table?.name}' as table
             from
             ${table?.name} t
             left join activists a on  a.id = t.activist_id
@@ -147,7 +176,8 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                                 community_name: data.community_name,
                                 mailchimp_api_key: data.mailchimp_api_key,
                                 mailchimp_list_id: data.mailchimp_list_id,
-                                action_fields: data.action_fields
+                                action_fields: data.action_fields,
+                                table: data.table
                             }
                             return await queueContacts.add({ contact }, {
                                 removeOnComplete: false,
