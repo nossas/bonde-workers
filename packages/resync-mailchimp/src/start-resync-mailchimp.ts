@@ -20,7 +20,7 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         left join mobilizations m on b.mobilization_id = m.id
         left join communities c on m.community_id = c.id
     where 
-    c.id = ${id} order by w.created_at asc
+    c.id = ${id} 
     order by w.created_at asc`
         : `select id, kind from widgets where id = ${id}`);
 
