@@ -12,7 +12,6 @@ export type Contact = {
     mobilization_name: string,
     widget_id: number,
     kind: string,
-    action: string,
     mailchimp_api_key: string,
     mailchimp_list_id: string, 
     action_fields: string,

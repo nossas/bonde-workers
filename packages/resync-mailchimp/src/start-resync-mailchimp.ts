@@ -87,11 +87,11 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     throw new Error(`Error search action kind: ${error}`);
                 });
                 if (countActions[0].pressure > 0) {
-                    table = {name: 'activist_pressures', action_fields: 'form_data'};
+                    table = {name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'};
                 } else if (countActions[0].donation >0 ) {
-                    table =  { name: 'donations', action_fields: 'customer' };
+                    table =  { name: 'donations', action_fields: 'customer', kind: 'dontation' };
                 } else if (countActions[0].form >0 ) {
-                    table = { name: 'form_entries', action_fields: 'fields'};
+                    table = { name: 'form_entries', action_fields: 'fields', kind: 'form'};
                 } else {
                     const msg = `Not found action kind for widget ${w.id}`
                     log.info(msg);
@@ -109,7 +109,7 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             a.phone activist_phone,       
             a.email activist_email,
             w.id widget_id, 
-            w.kind widget_kind,
+            '${table.kind}' as widget_kind,
             b.id as block_id,
             m.id mobilization_id , 
             m."name" mobilization_name,
@@ -119,10 +119,10 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             c.mailchimp_list_id,
             t.id,
             t.created_at,
-            t.${table?.action_fields} action_fields,
-            '${table?.name}' as table
+            t.${table.action_fields} action_fields,
+            '${table.name}' as table
             from
-            ${table?.name} t
+            ${table.name} t
             left join activists a on  a.id = t.activist_id
             left join widgets w on t.widget_id = w.id
             left join blocks b on w.block_id = b.id
