@@ -72,9 +72,9 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             table = actionTable(w.kind);
             if(!table) {
                 const queryAction = `select 
-                (select count(1) from activist_pressures ap where ap.widget_id = w.id) as pressure,
-                (select count(1) from form_entries f where f.widget_id = w.id) as form,
-                (select count(1) from donations d where d.widget_id = w.id) as donation
+                (select ap.id from activist_pressures ap where ap.widget_id = w.id limit 1) as pressure,
+                (select f.id from form_entries f where f.widget_id = w.id limit 1) as form,
+                (select d.id from donations d where d.widget_id = w.id limit 1) as donation
                 from widgets w where w.id = ${w.id}`
                 
                 const countActions = await client.query(queryAction)
@@ -86,11 +86,11 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     apmAgent?.captureError(error);
                     throw new Error(`Error search action kind: ${error}`);
                 });
-                if (countActions[0].pressure > 0) {
+                if (countActions[0].pressure) {
                     table = {name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'};
-                } else if (countActions[0].donation >0 ) {
+                } else if (countActions[0].donation) {
                     table =  { name: 'donations', action_fields: 'customer', kind: 'dontation' };
-                } else if (countActions[0].form >0 ) {
+                } else if (countActions[0].form) {
                     table = { name: 'form_entries', action_fields: 'fields', kind: 'form'};
                 } else {
                     const msg = `Not found action kind for widget ${w.id}`
