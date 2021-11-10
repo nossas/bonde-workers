@@ -3,27 +3,9 @@ import es from "event-stream";
 import { queueContacts, actionTable, dbPool } from "./utils";
 import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
-import { nextDay } from "date-fns";
 const JSONStream = require('JSONStream');
 
-export async function startResyncMailchimpHandle(id: number, is_community: boolean) {
-
-    apmAgent?.setCustomContext({
-        id,
-        is_community
-    });
-
-    const queryWidget = (is_community ? `select w.id , 
-    w.kind
-    from widgets w 
-        left join blocks b on w.block_id = b.id
-        left join mobilizations m on b.mobilization_id = m.id
-        left join communities c on m.community_id = c.id
-    where 
-    c.id = ${id} 
-    order by w.created_at asc`
-        : `select id, kind from widgets where id = ${id}`);
-
+const stream = async (id: number, is_community: boolean, table: any, client: PoolClient) => {
     let pool: Pool;
     try {
         pool = await dbPool();
@@ -33,75 +15,12 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         throw new Error(`${error}`);
     }
     
-    pool.connect(async (error: Error, client: PoolClient, done) => {
+   
+        const condition: String = is_community? `c.id = ${id}`: `w.id = ${id}`;
+        const prefix = is_community? `COMMUNITY${id}IDW$`: `WIDGET`; 
 
-        if (error){
-            apmAgent?.captureError(error);
-            throw new Error(`${error}`);
-        }
-
-        const widgets = await client.query(queryWidget)
-            .then((result) => {
-                return result.rows
-            }).catch(async(error) => {
-                client.release();
-                await pool.end();
-                apmAgent?.captureError(error);
-                throw new Error(`Error search widgets: ${error}`);
-            });
-
-        const widgetsLength = widgets.length;
-        if (widgetsLength == 0) {
-            client.release();
-            await pool.end();
-            const status = is_community ? `No widgets found for community id ${id}`
-                : `Widget ${id} not found`;
-            log.info(status);
-            return status;
-        }
-
-        apmAgent?.setCustomContext({
-            widgetsCount: widgetsLength 
-        });
-
-        let countWidgets = 0;
-
-        widgets?.forEach(async (w) => {
-
-            let table;
-            table = actionTable(w.kind);
-            if(!table) {
-                const queryAction = `select 
-                (select ap.id from activist_pressures ap where ap.widget_id = w.id limit 1) as pressure,
-                (select f.id from form_entries f where f.widget_id = w.id limit 1) as form,
-                (select d.id from donations d where d.widget_id = w.id limit 1) as donation
-                from widgets w where w.id = ${w.id}`
-                
-                const countActions = await client.query(queryAction)
-                .then((result) => {
-                    return result.rows
-                }).catch(async(error) => {
-                    client.release();
-                    await pool.end();
-                    apmAgent?.captureError(error);
-                    throw new Error(`Error search action kind: ${error}`);
-                });
-                if (countActions[0].pressure) {
-                    table = {name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'};
-                } else if (countActions[0].donation) {
-                    table =  { name: 'donations', action_fields: 'customer', kind: 'dontation' };
-                } else if (countActions[0].form) {
-                    table = { name: 'form_entries', action_fields: 'fields', kind: 'form'};
-                } else {
-                    const msg = `Not found action kind for widget ${w.id}`
-                    log.info(msg);
-                    return;
-                } 
-            }
-
-            const prefix = is_community? `COMMUNITY${id}IDW${w.id}`: `WIDGET${id}`; 
-            log.info(`Search contacts widget ${JSON.stringify(w)}`);
-            const query = new QueryStream(`select
+        //log.info(`Search contacts widget ${JSON.stringify(id)}`);
+        const query = new QueryStream(`select
             trim(a.first_name) activist_first_name,
             trim(a.last_name) activist_last_name, 
             a.city activist_city, 
@@ -128,12 +47,12 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             left join blocks b on w.block_id = b.id
             left join mobilizations m on b.mobilization_id = m.id
             left join communities c on m.community_id = c.id
-            where w.id = ${w.id} 
+            
+            where ${condition}
             and (t.mailchimp_status is null or t.mailchimp_status <> 'archived')
             and (select count(*) from ${table?.name} t2 where t2.activist_id = t.activist_id 
                  and t2.widget_id = t.widget_id  and t2.mailchimp_status = 'archived') = 0
             order by t.created_at asc`);
-
             let stream: QueryStream;
             try {
                 stream = client.query(query);
@@ -141,14 +60,10 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                 apmAgent?.captureError(err);
                 throw new Error(`${err}`)
             }
+
             stream.on('end', async () => {
-                log.info(`Add activists of Widget ${w.id}`);
-                countWidgets = countWidgets + 1;
-                if (widgetsLength == countWidgets) {
-                    stream.destroy();
-                    done();
-                    await pool.end();
-                }
+                log.info(`Add activists of ${table.name}`);
+                stream.destroy();   
             });
             stream.on('error', (err: any) => {
                 log.error(`${err}`);
@@ -194,8 +109,91 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     }
                 )
             );
-        });
+
+}
+
+export async function startResyncMailchimpHandle(id: number, is_community: boolean) {
+
+    apmAgent?.setCustomContext({
+        id,
+        is_community
     });
-   
+    
+    let pool: Pool;
+    try {
+        pool = await dbPool();
+    } catch (error) {
+        log.error(`${error}`);
+        apmAgent?.captureError(error);
+        throw new Error(`${error}`);
+    }
+    pool.connect(async (error: Error, client: PoolClient, done) => {
+        if (error){
+            apmAgent?.captureError(error);
+            throw new Error(`${error}`);
+        }
+
+        if(is_community){
+            await stream(id, is_community,{ name: 'donations', action_fields: 'customer', kind: 'donation' }, client);
+            await stream(id, is_community,{  name: 'form_entries', action_fields: 'fields', kind: 'form' }, client);
+            await stream(id, is_community,{ name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'}, client);
+        } else {
+
+            const widget = await client.query(`select id, kind from widgets where id = ${id}`)
+            .then((result) => {
+                return result.rows
+            }).catch(async(error) => {
+                client.release();
+                await pool.end();
+                apmAgent?.captureError(error);
+                throw new Error(`Error search widget: ${error}`);
+            });
+        
+            if (widget.length == 0) {
+                client.release();
+                await pool.end();
+                const status = `Widget ${id} not found`;
+                log.info(status);
+                return status;
+            }
+
+            let table = actionTable(widget[0].kind); 
+            if(!table) {
+                const queryAction = `select 
+                w.kind
+                (select ap.id from activist_pressures ap where ap.widget_id = w.id limit 1) as pressure,
+                (select f.id from form_entries f where f.widget_id = w.id limit 1) as form,
+                (select d.id from donations d where d.widget_id = w.id limit 1) as donation
+                from widgets w where w.id = ${id}`
+                
+                const countActions = await client.query(queryAction)
+                .then((result) => {
+                    return result.rows
+                }).catch(async(error) => {
+                    client.release();
+                    await pool.end();
+                    apmAgent?.captureError(error);
+                    throw new Error(`Error search action kind: ${error}`);
+                });
+                if (countActions[0].pressure) {
+                    table = {name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'};
+                } else if (countActions[0].donation) {
+                    table = {name: 'donations', action_fields: 'customer', kind: 'donation'};
+                } else if (countActions[0].form) {
+                    table = { name: 'form_entries', action_fields: 'fields', kind: 'form'};
+                } else {
+                    client.release();
+                    await pool.end();
+                    const msg = `Not found action kind for widget ${id}`
+                    log.error(msg);
+                    apmAgent?.captureError(msg);
+                    throw new Error(`Error search action kind: ${msg}`);
+                } 
+
+            }
+
+            await stream(id, is_community, table, client);
+        }
+    });
     return "started to add contacts to the queue";
 }
