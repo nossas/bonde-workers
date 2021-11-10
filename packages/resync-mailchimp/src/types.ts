@@ -37,3 +37,10 @@ export type MergeFields = {
     last_name: string,
     email: string
 }
+
+export type Table = {
+    name: string,
+    action_fields: string,
+    kind: string
+
+}
