@@ -32,8 +32,8 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         if(is_community){
             //search all action tables
             tables.push({ name: 'donations', action_fields: 'customer', kind: 'donation' });
-            tables.push({ name: 'form_entries', action_fields: 'fields', kind: 'form' });
             tables.push({ name: 'activist_pressures', action_fields: 'form_data', kind: 'pressure'});
+            tables.push({ name: 'form_entries', action_fields: 'fields', kind: 'form' });
             
         } else {
             //find kind action of the widget 
@@ -97,6 +97,7 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
         tables.forEach(async (table)=> {
             const condition: String = is_community? `c.id = ${id}`: `w.id = ${id}`;
             const prefix = is_community? `COMMUNITY${id}IDW`: `WIDGET`; 
+            //const widgets
             const query = new QueryStream(`select
                     trim(a.first_name) activist_first_name,
                     trim(a.last_name) activist_last_name, 
@@ -124,11 +125,11 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     left join blocks b on w.block_id = b.id
                     left join mobilizations m on b.mobilization_id = m.id
                     left join communities c on m.community_id = c.id
-                    
                     where ${condition}
                     and (t.mailchimp_status is null or t.mailchimp_status <> 'archived')
-                    and (select count(*) from ${table?.name} t2 where t2.activist_id = t.activist_id 
-                         and t2.widget_id = t.widget_id  and t2.mailchimp_status = 'archived') = 0
+                    and (select t2.id from  ${table.name} t2
+                         where t2.activist_id = t.activist_id and t2.widget_id = t.widget_id  
+                         and t2.mailchimp_status = 'archived' limit 1) is null
                     order by t.created_at asc`);
                 let stream: QueryStream;
                 try {
