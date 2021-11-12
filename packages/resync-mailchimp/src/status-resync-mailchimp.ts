@@ -3,41 +3,33 @@ import { queueContacts } from "./utils";
 import { Job }  from "bull";
 import  { format } from "date-fns";
 
-
 export const statusResyncMailchimpHandle = async (prefix: string) => {
-    const allCompleted = await queueContacts.getCompleted();
-    const completed = allCompleted.filter(j => { return j.id.toString().indexOf(prefix) >= 0 }) 
-    
-    const allWaiting = await queueContacts.getWaiting();
-    const waiting = allWaiting.filter(j => { return j.id.toString().indexOf(prefix) >= 0 }) 
-
-    const allFailed = await queueContacts.getFailed();
-    const failed = allFailed.filter(j => { return j.id.toString().indexOf(prefix) >= 0 }) 
- 
-    const allActive = await queueContacts.getActive();
-    const active = allActive.filter(j => { return j.id.toString().indexOf(prefix) >= 0 }) 
-    
-    //last sync
-    let date;
-    if(completed.length > 0){
-        const lastJob = completed.reduce(function (a:Job, b: Job) { 
-            if(a.finishedOn && b.finishedOn){
-                return a.finishedOn > b.finishedOn? a : b;
+    const allJobs = await queueContacts.getJobs(['waiting', 'active', 'completed', 'failed']);
+    const jobs :Job[] =  allJobs.filter(j => { return j.id.toString().indexOf(prefix) >= 0 }); 
+    let counters = { completed : 0, waiting: 0, failed: 0, active: 0 } ;     
+    let last = 0;
+    for (var i = 0; i < jobs.length; i++) {
+        if(await jobs[i].isCompleted()){
+            counters.completed++;
+            const finishedOn = jobs[i].finishedOn; 
+            if (finishedOn && last < finishedOn){
+                last = finishedOn;
             }
-            return b
-        });
-    
-        if(lastJob.finishedOn){
-         date = new Date(lastJob.finishedOn);
+        }else if(await jobs[i].isWaiting()){
+            counters.waiting++;
+        }else if (await jobs[i].isFailed()){
+            counters.failed++;
+        } else if (await jobs[i].isActive()){
+            counters.active++;
         }
     }
-    
+   
     let status = 'Parada';
-    if (active.length == 0) {
-        if (waiting.length > 0) {
+    if (counters.active == 0) {
+        if (counters.waiting > 0) {
            status = 'Em espera'
         } else{
-            if ((completed.length >0 || failed.length > 0)){
+            if ((counters.completed >0 || counters.failed > 0)){
                 status = 'Finalizada';
             }
         }
@@ -46,11 +38,8 @@ export const statusResyncMailchimpHandle = async (prefix: string) => {
     }
    
     return {
-            completed: completed.length,
-            waiting: waiting.length,
-            failed: failed.length,
-            active: active.length,
-            last_sync: date? format(date, 'dd/MM/yyyy HH:mm:ss'): "",
+            ...counters,
+            last_sync: last>0? format( new Date(last), 'dd/MM/yyyy HH:mm:ss'): "",
             status: status
         };
 }
