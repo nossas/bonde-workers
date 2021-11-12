@@ -120,7 +120,6 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                  });
             }
             totalWidgets = totalWidgets + widgets.length;
-            console.log(widgets);
             widgets.forEach(async (w)=> {
                 const query = new QueryStream(`select
                 trim(a.first_name) activist_first_name,
@@ -164,10 +163,9 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             }
     
             stream.on('end', async () => {
-                log.info(`Add activists of ${table.name} id ${w.id}`);
                 stream.destroy();
                 countWidgets++;
-                console.log(countWidgets,totalWidgets,countTables,tables.length)
+                log.info(`Add activists of ${table.name} id ${w.id} ${countWidgets}/${totalWidgets}`);
                 if((countWidgets == totalWidgets) && (countTables == tables.length)){
                     log.info('Finished connection');
                     client.release();
