@@ -82,10 +82,8 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     left join blocks b on w.block_id = b.id
                     left join mobilizations m on b.mobilization_id = m.id
                     left join communities c on m.community_id = c.id
-                    left join ${table.name} t2 on t2.activist_id = t.activist_id and t2.widget_id = t.widget_id and t2.mailchimp_status = 'archived'
                     where ${condition}
                     and (t.mailchimp_status is null or t.mailchimp_status <> 'archived')
-                    and t2.id is null
                     order by t.created_at asc`);
                 let stream: QueryStream;
                 try {
