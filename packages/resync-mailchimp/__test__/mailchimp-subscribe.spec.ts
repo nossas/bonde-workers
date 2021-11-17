@@ -31,10 +31,10 @@ describe('mailchimp function tests', () => {
         mobilization_name: "Mobilization",
         widget_id: 5678,
         kind: "pressure",
-        action: "activist_pressures",
         mailchimp_api_key: 'xxx-us10',
         mailchimp_list_id: 'xxx',
-        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}'
+        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}',
+        table: "activist_pressures"
     }
 
     const contact_2: Contact = {
@@ -51,10 +51,10 @@ describe('mailchimp function tests', () => {
         mobilization_name: "Mobilization",
         widget_id: 5678,
         kind: "pressure",
-        action: "activist_pressures",
         mailchimp_api_key: 'xxx-us10',
         mailchimp_list_id: 'xxx',
-        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}'
+        action_fields: '{"body": "body", "city": "Cidade", "name": "Nome", "email": "email@email.org", "state": "AC", "subject": "subject", "lastname": "Sobrenome"}',
+        table: "activist_pressures"
     }
 
     const contact_3: Contact = {
@@ -71,10 +71,10 @@ describe('mailchimp function tests', () => {
         mobilization_name: "Mobilization",
         widget_id: 5678,
         kind: "donation",
-        action: "donations",
         mailchimp_api_key: 'xxx-us10',
         mailchimp_list_id: 'xxx',
-        action_fields: `"name"=>"Nome Sobrenome", "email"=>"email@email.org", "phone"=>"{\\"ddd\\"=>\\"99\\", \\"number\\"=>\\"9999999999\\"}", "address"=>"{\\"zipcode\\"=>\\"0000000\\", \\"street\\"=>\\"Rua \\", \\"street_number\\"=>\\"00\\", \\"complementary\\"=>\\"0\\", \\"neighborhood\\"=>\\"Bairro\\", \\"city\\"=>\\"Cidade\\", \\"state\\"=>\\"AC\\"}", "document_number"=>"XXXXXXXXX"`       
+        action_fields: `"name"=>"Nome Sobrenome", "email"=>"email@email.org", "phone"=>"{\\"ddd\\"=>\\"99\\", \\"number\\"=>\\"9999999999\\"}", "address"=>"{\\"zipcode\\"=>\\"0000000\\", \\"street\\"=>\\"Rua \\", \\"street_number\\"=>\\"00\\", \\"complementary\\"=>\\"0\\", \\"neighborhood\\"=>\\"Bairro\\", \\"city\\"=>\\"Cidade\\", \\"state\\"=>\\"AC\\"}", "document_number"=>"XXXXXXXXX"`,
+        table: "donations"
     }
 
     afterEach(() => {

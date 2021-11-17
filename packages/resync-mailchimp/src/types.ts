@@ -12,10 +12,10 @@ export type Contact = {
     mobilization_name: string,
     widget_id: number,
     kind: string,
-    action: string,
     mailchimp_api_key: string,
     mailchimp_list_id: string, 
-    action_fields: string
+    action_fields: string,
+    table: string
 }
 
 export type Tag = {
@@ -36,4 +36,11 @@ export type MergeFields = {
     first_name: string,
     last_name: string,
     email: string
+}
+
+export type Table = {
+    name: string,
+    action_fields: string,
+    kind: string
+
 }
