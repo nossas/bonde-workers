@@ -80,6 +80,14 @@ const slugify = (string: string) => {
     .replace(/-+$/, '') // Trim - from end of text
 }
 
+/**
+ * Returns the results from an API Graphql
+ *
+ * @returns JSON object with communities, dns_hosted_zones and mobilizations data
+ *
+ * @internal
+ */
+
 const getMobilizations: any = async () => {
   // , where:{name:{_eq:"Minha Porto Alegre"}}    , where:{id:{_eq:49}}
   const query = `query myEntries($widgetId: Int) {
@@ -116,6 +124,17 @@ const delay = (ms: number) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Check if IP are setup correctly
+ *
+ * @remarks
+ * This is a mandatory validation since certicates are only generated when we are confirmed as owner of the domain
+ *
+ * @param m - Mobilization
+ * @returns `true` or `false` 
+ *
+ * @internal
+ */
 const checkIP = async (m: any) => {
   const searchIp = (geoip: any, ip: string) => {
     let ret = false;
@@ -136,8 +155,8 @@ const checkIP = async (m: any) => {
     const r = await fetch(`https://dns.google/resolve?name=${m.custom_domain}`);
     geoip = await r.json();
 
-    return (searchIp(geoip, '50.19.148.209') ? m : { error: true });
-    // return (searchIp(geoip, '54.156.173.29') ? m : { error: true });
+    //return (searchIp(geoip, '50.19.148.209') ? m : { error: true });
+    return (searchIp(geoip, '54.156.173.29') ? m : { error: true });
   } catch (error) {
     console.log(error);
     return false;
@@ -148,10 +167,22 @@ let dockerComposeTemplate =
   `version: '2'
 services:`;
 
-// sofisticar o valor do host do serviço para incluir domínios com www e sem www
+/**
+ * Returns docker compose config file of a community
+ *
+ * @remarks
+ * We add to all custom domains an extra domain to include www entry.
+ * So, to each custom domain we configure to create two certificates.
+ *
+ * @param element_name - Object of community with id and name 
+ * @param validatedDNS - Array of mobilizations with id, name, custom_domain
+ * @returns String of config used to setup community certificates
+ *
+ * @internal
+ */
 let dockerComposeServiceTemplate = (element_name: any, validatedDNS: any) => `
   ${slugify(element_name)}:
-    image: nossas/bonde-public-ts:0.4.1-alpha.3
+    image: nossas/bonde-public-ts:0.4.2
     environment:
 ${process.env.TPL_SERVICE_ENV}
     external_links:
@@ -172,6 +203,19 @@ ${process.env.TPL_SERVICE_ENV}
 }).join(',')};
       traefik.acme: 'true'`;
 
+/**
+ * Returns compose config file from all communities
+ *
+ * @remarks
+ * We use API ACME Let's Encrypt to generate certificates.
+ * The limit of domains we can include in each certificate is 100 and we handle these limitation at this moment.
+ *
+ * @param community - Object of community with id and name 
+ * @param validatedDNS - Array of mobilizations with id, name, custom_domain
+ * @returns String of config used to setup cluster containers
+ *
+ * @internal
+ */
 const dockerComposeService = (community: any, validatedDNS: any) => {
   // console.log(community, validatedDNS);
   if ((validatedDNS !== undefined) && (validatedDNS.length >= 50)) {
@@ -187,7 +231,18 @@ const dockerComposeService = (community: any, validatedDNS: any) => {
     return '';
   }
 }
-
+/**
+ * Main function is where all came together, {@link getMobilizations}, {@link mapFnCheckIP}, {@link dockerComposeService}, 
+ *
+ * @remarks
+ *  In the end of validations, we sent the request to rancher cluster configured by env vars.
+ *
+ * @param community - Object of community with id and name 
+ * @param validatedDNS - Array of mobilizations with id, name, custom_domain
+ * @returns String of config used to setup cluster containers
+ *
+ * @public
+ */
 export async function main() {
   console.time('mapAllSettled')
   const mobsByCommunity = await getMobilizations()
