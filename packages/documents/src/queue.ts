@@ -6,9 +6,9 @@ export const queue = new Queue('example', {
   redis: redis.createClient(process.env.REDIS_URL || "redis://127.0.0.1:6379"),
 });
 
-const delay = (ms: number) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// const delay = (ms: number) => {
+//   return new Promise(resolve => setTimeout(resolve, ms));
+// }
 
 // Process jobs from as many servers or processes as you like
 queue.process(1, async (job: any) => {

@@ -1,7 +1,7 @@
-const am = require('am')
-const got = require('got')
-const { promisify } = require('util')
-const { setImmediate } = require('timers')
+// import am from 'am'
+import got from 'got'
+import { promisify } from 'util'
+import { setImmediate } from 'timers'
 
 const setImmediateP = promisify(setImmediate)
 
@@ -22,7 +22,7 @@ async function mapItem(mapFn: (arg0: any, arg1: any, arg2: any) => any, currentV
 
 async function worker(id: number, gen: Generator<any[], void, unknown>, mapFn: (arg0: any, arg1: any, arg2: any) => any, result: any[]) {
     console.time(`Worker ${id}`)
-    for (let [ currentValue, index, array ] of gen) {
+    for (let [currentValue, index, array] of gen) {
         console.time(`Worker ${id} --- index ${index} item ${currentValue}`)
         result[index] = await mapItem(mapFn, currentValue, index, array)
         console.timeEnd(`Worker ${id} --- index ${index} item ${currentValue}`)
@@ -33,7 +33,7 @@ async function worker(id: number, gen: Generator<any[], void, unknown>, mapFn: (
 function* arrayGenerator(array: string | any[]) {
     for (let index = 0; index < array.length; index++) {
         const currentValue = array[index]
-        yield [ currentValue, index, array ]
+        yield [currentValue, index, array]
     }
 }
 

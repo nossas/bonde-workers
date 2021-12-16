@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { promisify } from 'util';
-import { setImmediate } from 'timers';
+import { setImmediate, setTimeout } from 'timers';
 
 const setImmediateP = promisify(setImmediate)
 
@@ -264,7 +264,7 @@ export async function main() {
 
   const deploy = await fetch(`${process.env.RANCHER_API_URL}/v2-beta/projects/${process.env.RANCHER_PROJECT_ID}/stacks`, {
     "headers": {
-      "authorization": 'Basic ' + Buffer.from(process.env.RANCHER_API_KEY).toString('base64'),
+      "authorization": 'Basic ' + Buffer.from(process.env.RANCHER_API_KEY || "").toString('base64'),
       // "authorization": 'Bearer ' + process.env.RANCHER_API_KEY,
       "content-type": "application/json",
     },
