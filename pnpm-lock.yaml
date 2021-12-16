@@ -15,6 +15,7 @@ importers:
       '@types/node': ^15.14.9
       '@typescript-eslint/eslint-plugin': ^4.33.0
       '@typescript-eslint/parser': ^4.33.0
+      bee-queue: ^1.4.0
       codecov: ^4.0.0-0
       commander: ^7.0.0
       dotenv: ^10.0.0
@@ -34,6 +35,7 @@ importers:
       typescript: '4.2'
     dependencies:
       '@elastic/elasticsearch': 7.16.0
+      bee-queue: 1.4.0
       commander: 7.2.0
       got: 12.0.0
       node-fetch: 2.6.2
@@ -461,6 +463,13 @@ packages:
       '@babel/core': 7.15.5
       '@babel/helper-plugin-utils': 7.14.5
     dev: true
+
+  /@babel/runtime/7.16.5:
+    resolution: {integrity: sha512-TXWihFIS3Pyv5hzR7j6ihmeLkZfrXGxAr5UfSl8CHf+6q/wpiYDkUau0czckpYG8QmnCIuPpdLtuA9VmuGGyMA==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.13.9
+    dev: false
 
   /@babel/template/7.15.4:
     resolution: {integrity: sha512-UgBAfEa1oGuYgDIPM2G+aHa4Nlo9Lh6mGD2bDBGMTbYnc38vulXPuC1MGjYILIEmlwl6Rd+BPR9ee3gm20CBtg==}
@@ -1823,6 +1832,15 @@ packages:
       tweetnacl: 0.14.5
     dev: false
 
+  /bee-queue/1.4.0:
+    resolution: {integrity: sha512-sAXVUcXe4LIKkVrMN18CrudWbq5atC9VLeBjy1BkODAupXf/MVGfGfxdiv8Uit8JIkztnLU0jQFRQtB1uKuHow==}
+    engines: {node: '>= 4'}
+    dependencies:
+      p-finally: 1.0.0
+      promise-callbacks: 3.8.2
+      redis: 2.8.0
+    dev: false
+
   /binary-extensions/2.2.0:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
     engines: {node: '>=8'}
@@ -2491,6 +2509,10 @@ packages:
 
   /dottie/2.0.2:
     resolution: {integrity: sha512-fmrwR04lsniq/uSr8yikThDTrM7epXHBAAjH9TbeH3rEA8tdCO7mRzB9hdmdGyJCxF8KERo9CITcm3kGuoyMhg==}
+    dev: false
+
+  /double-ended-queue/2.1.0-0:
+    resolution: {integrity: sha1-ED01J/0xUo9AGIEwyEHv3XgmTlw=}
     dev: false
 
   /duplexer/0.1.2:
@@ -5684,6 +5706,14 @@ packages:
       es-abstract: 1.18.6
     dev: false
 
+  /object.getownpropertydescriptors/2.1.0:
+    resolution: {integrity: sha512-Z53Oah9A3TdLoblT7VKJaTDdXdT+lQO+cNpKVnya5JDe9uLvzu1YyY1yFDFrcxrlRgWrEFH0jJtD/IbuwjcEVg==}
+    engines: {node: '>= 0.8'}
+    dependencies:
+      define-properties: 1.1.3
+      es-abstract: 1.18.6
+    dev: false
+
   /object.getownpropertydescriptors/2.1.2:
     resolution: {integrity: sha512-WtxeKSzfBjlzL+F9b7M7hewDzMwy+C8NRssHd1YrNlzHzIDrXcXiNOMrezdAEM4UXixgV+vvnyBeN7Rygl2ttQ==}
     engines: {node: '>= 0.8'}
@@ -6069,6 +6099,14 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: true
 
+  /promise-callbacks/3.8.2:
+    resolution: {integrity: sha512-g+SziwZr9eLwF+Tejuz0nirmzrYm1Ou4dExaRap1+wG/Bip1FAjMwE+oOqwv6C+CxDCQJ9l0jMSE8ui1oRC/tQ==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      '@babel/runtime': 7.16.5
+      object.getownpropertydescriptors: 2.1.0
+    dev: false
+
   /promise.prototype.finally/3.1.2:
     resolution: {integrity: sha512-A2HuJWl2opDH0EafgdjwEw7HysI8ff/n4lW4QEVBCUXFk9QeGecBWv0Deph0UmLe3tTNYegz8MOjsVuE6SMoJA==}
     engines: {node: '>= 0.4'}
@@ -6254,11 +6292,29 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
+  /redis-parser/2.6.0:
+    resolution: {integrity: sha1-Uu0J2srBCPGmMcB+m2mUHnoZUEs=}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
   /redis-parser/3.0.0:
     resolution: {integrity: sha1-tm2CjNyv5rS4pCin3vTGvKwxyLQ=}
     engines: {node: '>=4'}
     dependencies:
       redis-errors: 1.2.0
+    dev: false
+
+  /redis/2.8.0:
+    resolution: {integrity: sha512-M1OkonEQwtRmZv4tEWF2VgpG0JWJ8Fv1PhlgT5+B+uNq2cA3Rt1Yt/ryoR+vQNOQcIEgdCdfH0jr3bDpihAw1A==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      double-ended-queue: 2.1.0-0
+      redis-commands: 1.7.0
+      redis-parser: 2.6.0
+    dev: false
+
+  /regenerator-runtime/0.13.9:
+    resolution: {integrity: sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==}
     dev: false
 
   /regex-not/1.0.2:
