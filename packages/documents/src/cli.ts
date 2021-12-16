@@ -1,10 +1,9 @@
 import { Command } from 'commander';
 import * as db from './db';
 import crypto from 'crypto';
-import { queue } from './queue';
-import { main as mainCerts} from './certs';
-import {makeCommad as makeCleanCommad} from './clean';
-
+// import { queue } from './queue';
+import { main as mainCerts } from './certs';
+import { makeCommad as makeCleanCommad } from './clean';
 
 const communityId = '9';
 const program = new Command();
@@ -34,12 +33,13 @@ syncs
           b.widgets.forEach((w: any) => {
             w.form_entries.forEach((fe: any) => {
               const preparedFields: any = []
-              JSON.parse(fe.fields).forEach((field:any) => {
-                preparedFields['form_' + field.label.toLowerCase().replace(/ /g,'-').replace(/[^\w-]+/g,'')] = (field.value !== undefined) ? field.value.toLowerCase() : "";
+              JSON.parse(fe.fields).forEach((field: any) => {
+                preparedFields['form_' + field.label.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')] = (field.value !== undefined) ? field.value.toLowerCase() : "";
               });
-              var md5sum = crypto.createHash('md5');
-              md5sum.update(''+c.id + m.id + w.id + fe.id);
-              const job = queue.createJob(({
+              const md5sum = crypto.createHash('md5');
+              md5sum.update('' + c.id + m.id + w.id + fe.id);
+              // const job = queue.createJob(({
+              console.log({
                 id: md5sum.digest('hex'),
                 community_id: c.id,
                 community_name: c.name,
@@ -56,30 +56,30 @@ syncs
                 widget_id: w.id,
                 action_id: fe.id,
                 action_type: "form",
-                action_data: ''+JSON.stringify(preparedFields),
+                action_data: '' + JSON.stringify(preparedFields),
                 action_created: new Date(fe.createdAt),
                 donation_value: "",
                 donation_recurring: "",
                 donation_status: "",
                 pressure_targets_count: "",
                 ...preparedFields,
-              }));
-
-              job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
               });
 
-              job.save();
+              // job.on('succeeded', (result: any) => {
+              //   console.log(`Received result for job ${job.id}:`, result);
+              // });
+
+              // job.save();
             });
           });
         });
       });
     });
   });
-;
+
 syncs
   .command('pressure')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
 
     const pressures = await db.getActions(communityId, 'pressure', Model.PressureByEmail, Model)
@@ -91,7 +91,8 @@ syncs
           b.widgets.forEach((w: any) => {
             w.activist_pressures.map((p: any) => {
               // console.log(p);
-              const job = queue.createJob(({
+              // const job = queue.createJob(({
+              console.log({
                 id: "",
                 community_id: c.id,
                 community_name: c.name,
@@ -114,31 +115,30 @@ syncs
                 donation_recurring: "",
                 donation_status: "",
                 pressure_targets_count: ""
-              }));
-              job.save();
-
-              job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
               });
+              // job.save();
 
+              // job.on('succeeded', (result: any) => {
+              //   console.log(`Received result for job ${job.id}:`, result);
+              // });
             });
           });
         });
       });
     });
   });
-;
+
 syncs
   .command('phone-pressure')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
     const pressuresPhone = await db.getActions(communityId, 'pressure-phone', Model.PressureByPhone, Model)
     console.log(`There are ${(pressuresPhone.count)} pressures phone`);
   });
-;
+
 syncs
   .command('donation')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
     const donations = await db.getActions(communityId, 'donation', Model.Donation, Model)
     console.log(`There are ${(donations.count)} donations`);
@@ -149,9 +149,10 @@ syncs
           b.widgets.forEach((w: any) => {
             w.donations.map((d: any) => {
               // console.log(p);
-              var md5sum = crypto.createHash('md5');
-              md5sum.update(''+c.id + m.d + w.id + d.id);
-              const job = queue.createJob(({
+              const md5sum = crypto.createHash('md5');
+              md5sum.update('' + c.id + m.d + w.id + d.id);
+              // const job = queue.createJob(({
+              console.log({
                 id: md5sum.digest('hex'),
                 community_id: c.id,
                 community_name: c.name,
@@ -174,20 +175,19 @@ syncs
                 donation_recurring: d.subscription,
                 donation_status: d.transactionStatus,
                 pressure_targets_count: ""
-              }));
-              job.save();
-
-              job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
               });
+              // job.save();
 
+              // job.on('succeeded', (result: any) => {
+              //   console.log(`Received result for job ${job.id}:`, result);
+              // });
             });
           });
         });
       });
     });
   });
-;
+
 // Add nested commands using `.addCommand().
 // The command could be created separately in another module.
 function makeHeatCommand() {
@@ -211,8 +211,9 @@ function makeHeatCommand() {
     });
   return heat;
 }
+
 program.addCommand(makeHeatCommand());
 
-program.addCommand(makeCleanCommad()); 
+program.addCommand(makeCleanCommad());
 
 program.parse(process.argv);

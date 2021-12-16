@@ -2,8 +2,8 @@
   "name": "resync-mailchimp",
   "version": "1.0.0",
   "main": "src/index.js",
-  "license": "MIT",
-  "scripts": {
+  "license": "AGPL-3.0-or-later",
+    "scripts": {
     "dev": "ts-node-dev src/index.ts",
     "dev-worker": "ts-node-dev src/worker.ts",
     "dev-clean": "ts-node-dev src/clean.ts",
@@ -24,12 +24,14 @@
     "elastic-apm-node": "^3.20.0",
     "event-stream": "^4.0.1",
     "express": "^4.17.1",
+    "ioredis": "4",
     "mailchimp-api-v3": "^1.15.0",
     "node-fetch": "^2.6.1",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
     "pg-query-stream": "^4.2.1",
     "pino": "^6.13.2",
+    "redis-commands": "1",
     "throng": "^5.0.0",
     "ts-node-dev": "^1.1.8",
     "url": "^0.11.0"
@@ -50,7 +52,6 @@
     "@types/redis-mock": "^0.17.0",
     "@types/supertest": "^2.0.11",
     "@types/throng": "^5.0.2",
-    "babel-jest": "^27.1.0",
     "ioredis-mock": "^5.6.0",
     "jest": "^27.1.0",
     "pgmock2": "^2.1.0",

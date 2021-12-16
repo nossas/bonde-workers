@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { promisify } from 'util';
-import { setImmediate } from 'timers';
+import { setImmediate, setTimeout } from 'timers';
 
 const setImmediateP = promisify(setImmediate)
 
@@ -21,7 +21,7 @@ async function mapItem(mapFn: (arg0: any, arg1: any, arg2: any) => any, currentV
 
 async function worker(id: number, gen: Generator<any[], void, unknown>, mapFn: any, result: any[]) {
   console.time(`Worker ${id}`)
-  for (let [currentValue, index, array] of gen) {
+  for (const [currentValue, index, array] of gen) {
     console.time(`Worker ${id} --- index ${index} item ${currentValue}`)
     result[index] = await mapItem(mapFn, currentValue, index, array)
     console.timeEnd(`Worker ${id} --- index ${index} item ${currentValue}`)
@@ -74,8 +74,8 @@ const slugify = (string: string) => {
     .replace(/\s+/g, '-') // Replace spaces with -
     .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
     .replace(/&/g, '-and-') // Replace & with 'and'
-    .replace(/[^\w\-]+/g, '') // Remove all non-word characters
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/[^\w-]+/g, '') // Remove all non-word characters
+    .replace(/--+/g, '-') // Replace multiple - with single -
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
 }
@@ -180,9 +180,9 @@ services:`;
  *
  * @internal
  */
-let dockerComposeServiceTemplate = (element_name: any, validatedDNS: any) => `
+const dockerComposeServiceTemplate = (element_name: any, validatedDNS: any) => `
   ${slugify(element_name)}:
-    image: nossas/bonde-public-ts:0.4.2
+    image: nossas/bonde-public-ts:v5.0.0-beta.0
     environment:
 ${process.env.TPL_SERVICE_ENV}
     external_links:
@@ -219,7 +219,8 @@ ${process.env.TPL_SERVICE_ENV}
 const dockerComposeService = (community: any, validatedDNS: any) => {
   // console.log(community, validatedDNS);
   if ((validatedDNS !== undefined) && (validatedDNS.length >= 50)) {
-    let dockerComposeContent: string = '', i: number, j: number, temparray: any, chunk = 50;
+    let dockerComposeContent = '', i: number, j: number, temparray: any;
+    const chunk = 50;
     for (i = 0, j = validatedDNS.length; i < j; i += chunk) {
       temparray = validatedDNS.slice(i, i + chunk);
       dockerComposeContent += dockerComposeServiceTemplate(`${community.name} ${Math.round(i / chunk) + 1}`, temparray)
@@ -264,7 +265,7 @@ export async function main() {
 
   const deploy = await fetch(`${process.env.RANCHER_API_URL}/v2-beta/projects/${process.env.RANCHER_PROJECT_ID}/stacks`, {
     "headers": {
-      "authorization": 'Basic ' + Buffer.from(process.env.RANCHER_API_KEY).toString('base64'),
+      "authorization": 'Basic ' + Buffer.from(process.env.RANCHER_API_KEY || "").toString('base64'),
       // "authorization": 'Bearer ' + process.env.RANCHER_API_KEY,
       "content-type": "application/json",
     },
