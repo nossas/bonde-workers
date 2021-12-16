@@ -5,7 +5,6 @@ import crypto from 'crypto';
 import { main as mainCerts } from './certs';
 import { makeCommad as makeCleanCommad } from './clean';
 
-
 const communityId = '9';
 const program = new Command();
 program.version('0.0.1');
@@ -77,7 +76,7 @@ syncs
       });
     });
   });
-;
+
 syncs
   .command('pressure')
   .action(async () => {
@@ -128,7 +127,7 @@ syncs
       });
     });
   });
-;
+
 syncs
   .command('phone-pressure')
   .action(async () => {
@@ -136,7 +135,7 @@ syncs
     const pressuresPhone = await db.getActions(communityId, 'pressure-phone', Model.PressureByPhone, Model)
     console.log(`There are ${(pressuresPhone.count)} pressures phone`);
   });
-;
+
 syncs
   .command('donation')
   .action(async () => {
@@ -188,7 +187,7 @@ syncs
       });
     });
   });
-;
+
 // Add nested commands using `.addCommand().
 // The command could be created separately in another module.
 function makeHeatCommand() {
@@ -212,6 +211,7 @@ function makeHeatCommand() {
     });
   return heat;
 }
+
 program.addCommand(makeHeatCommand());
 
 program.addCommand(makeCleanCommad());

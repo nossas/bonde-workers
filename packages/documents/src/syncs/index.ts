@@ -22,7 +22,7 @@ async function mapItem(mapFn: (arg0: any, arg1: any, arg2: any) => any, currentV
 
 async function worker(id: number, gen: Generator<any[], void, unknown>, mapFn: (arg0: any, arg1: any, arg2: any) => any, result: any[]) {
     console.time(`Worker ${id}`)
-    for (let [currentValue, index, array] of gen) {
+    for (const [currentValue, index, array] of gen) {
         console.time(`Worker ${id} --- index ${index} item ${currentValue}`)
         result[index] = await mapItem(mapFn, currentValue, index, array)
         console.timeEnd(`Worker ${id} --- index ${index} item ${currentValue}`)

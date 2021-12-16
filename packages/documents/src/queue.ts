@@ -1,5 +1,5 @@
-const Queue = require('bee-queue');
-const redis = require('redis');
+import Queue from 'bee-queue'
+import redis from 'redis'
 import { client as elkClient } from './docs';
 
 export const queue = new Queue('example', {

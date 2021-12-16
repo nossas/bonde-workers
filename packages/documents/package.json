@@ -2,8 +2,8 @@
   "name": "documents",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "start": "node ./dist/esbuild/cli.js",
-    "cli": "ts-node src/cli.ts",
+    "start": "node -r dotenv/config ./dist/esbuild/cli.js",
+    "cli": "ts-node -r dotenv/config src/cli.ts",
     "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
     "test": "jest",
     "clean": "rm -rf dist build package",
