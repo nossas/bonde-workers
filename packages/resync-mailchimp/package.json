@@ -10,7 +10,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "worker": "node dist/src/worker.js",
-    "clean": "node dist/src/clean.ts",
+    "clean": "node dist/src/clean.js",
     "test": "NODE_ENV=test jest --coverage ."
   },
   "dependencies": {
