@@ -155,8 +155,8 @@ const checkIP = async (m: any) => {
     const r = await fetch(`https://dns.google/resolve?name=${m.custom_domain}`);
     geoip = await r.json();
 
-    //return (searchIp(geoip, '50.19.148.209') ? m : { error: true });
-    return (searchIp(geoip, '54.156.173.29') ? m : { error: true });
+    return (searchIp(geoip, '50.19.148.209') ? m : { error: true });
+    // return (searchIp(geoip, '54.156.173.29') ? m : { error: true });
   } catch (error) {
     console.log(error);
     return false;
@@ -182,7 +182,7 @@ services:`;
  */
 const dockerComposeServiceTemplate = (element_name: any, validatedDNS: any) => `
   ${slugify(element_name)}:
-    image: nossas/bonde-public-ts:v5.0.0-beta.0
+    image: nossas/bonde-public-ts:v5.0.0-beta.2
     environment:
 ${process.env.TPL_SERVICE_ENV}
     external_links:
