@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+
+dotenv.config();
 import { REDIS_URL, queueContacts } from "./utils"; 
 import Queue from "bull";
 import log, { apmAgent } from "./dbg";
@@ -18,7 +21,7 @@ queueClean.on('completed', async () => {
 } );
 
 queueClean.on('error', async (err) => {
-    apmAgent.captureError(err);
+    apmAgent?.captureError(err);
     log.error(`Failed to clean ${err}`);
 
 } );
