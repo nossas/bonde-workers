@@ -4,6 +4,7 @@ import { queueContacts, actionTable, dbPool } from "./utils";
 import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 import { Table,Contact } from "./types";
+import { clientES } from "./client-elasticsearch";
 const JSONStream = require('JSONStream');
 
 /**
@@ -52,9 +53,20 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             }          
         let countTables = 0;  
         log.info(`Search activists-> ID: ${id}, IS_COMMUNITY: ${is_community}`);
+
         tables.forEach(async (table)=> {
-            const condition: String = is_community? `c.id = ${id}`: `w.id = ${id}`;
-            const prefix = is_community? `COMMUNITY${id}IDW`: `WIDGET`; 
+            let condition:string, prefix:string, index:string;
+            if(is_community){
+                condition  =  `c.id = ${id}`;
+                prefix = `COMMUNITY${id}WIDGET`; 
+                index =`contact-mailchimp-community-${id}`;
+    
+            }else{
+                condition =  `w.id = ${id}`;
+                prefix = `WIDGET`; 
+                index = `contact-mailchimp-widget-${id}`; 
+            }
+           
             const query = new QueryStream(`select 
                     trim(a.first_name) activist_first_name,
                     trim(a.last_name) activist_last_name, 
@@ -130,10 +142,20 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                                         mailchimp_api_key: data.mailchimp_api_key,
                                         mailchimp_list_id: data.mailchimp_list_id,
                                         action_fields: data.action_fields,
-                                        table: data.table
+                                        table: data.table,
+                                        status: 'waiting',
+                                        added_at: new Date()
                                     }
+                                   
+                                     await clientES.index({
+                                        index,
+                                        method: "POST",
+                                        id: prefix + contact.widget_id + 'ID' + contact.id,
+                                        body: contact
+                                    });
+                                    
                                     return await queueContacts.add({ contact }, {
-                                        removeOnComplete: false,
+                                        removeOnComplete: true,
                                         jobId: prefix + contact.widget_id + 'ID' + contact.id
                                     });
                                 }
