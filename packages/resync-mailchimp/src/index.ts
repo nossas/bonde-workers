@@ -35,11 +35,11 @@ app.post('/status-resync-mailchimp', async (req, res) => {
         return res.status(404).json({ error: "Invalid request" });
     } 
     const { is_community, id } = req.body.input;
-    const prefix = is_community? `COMMUNITY${id}ID`: `WIDGET${id}ID`;
+    const posfix = is_community? `community-${id}`: `widget-${id}`;
     
     try{
          
-        const status = await statusResyncMailchimpHandle(prefix);
+        const status = await statusResyncMailchimpHandle(posfix);
         return res.json(status);
        
     } catch(err){
