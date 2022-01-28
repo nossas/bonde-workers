@@ -1,11 +1,11 @@
 import { clientES } from "./client-elasticsearch";
 import  { format } from "date-fns";
 
-// last_sync: last>0? format( new Date(last), 'dd/MM/yyyy HH:mm:ss'): "",
 export const statusResyncMailchimpHandle = async (posfix: string) => {
+    let counters = { completed : 0, waiting: 0, failed: 0, active: 0 } ; 
     const max_finished_at = await clientES
     .search({
-        index: `contact-mailchimp-teste-${posfix}`,
+        index: `resync-mailchimp-teste-${posfix}`,
         body: 
           {
             "aggs": {
@@ -21,14 +21,12 @@ export const statusResyncMailchimpHandle = async (posfix: string) => {
       
       let { body } = await clientES.sql.query({
         body: {
-          query: `SELECT status, count(*) total FROM \"contact-mailchimp-teste-${posfix}\" group by status`
+          query: `SELECT status, count(*) total FROM \"resync-mailchimp-teste-${posfix}\" group by status`
         }
       })  
 
       const rows = body.rows;
       
-      let counters = { completed : 0, waiting: 0, failed: 0, active: 0 } ;  
-
       for (var i = 0; i < body.rows.length; i++) {
         
         switch (rows[i][0]) {
@@ -53,16 +51,14 @@ export const statusResyncMailchimpHandle = async (posfix: string) => {
       }
      
       let status = 'Parada';
-      if (counters.active == 0) {
-          if (counters.waiting > 0) {
-             status = 'Em espera'
-          } else{
-              if ((counters.completed >0 || counters.failed > 0)){
-                  status = 'Finalizada';
-              }
-          }
+      if (counters.waiting == 0) {
+        if ((counters.completed >0 || counters.failed > 0)){
+            status = 'Finalizada';
+        }
       } else {
+        if ((counters.completed >0 || counters.failed > 0)){
           status = 'Em andamento';
+        }
       }
 
       return {

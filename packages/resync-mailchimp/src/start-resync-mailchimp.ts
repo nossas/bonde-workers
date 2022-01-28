@@ -59,12 +59,12 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             if(is_community){
                 condition  =  `c.id = ${id}`;
                 prefix = `COMMUNITY${id}WIDGET`; 
-                index =`contact-mailchimp-community-${id}`;
+                index =`resync-mailchimp-community-${id}`;
     
             }else{
                 condition =  `w.id = ${id}`;
                 prefix = `WIDGET`; 
-                index = `contact-mailchimp-widget-${id}`; 
+                index = `resync-mailchimp-widget-${id}`; 
             }
            
             const query = new QueryStream(`select 
@@ -81,8 +81,8 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                     m."name" mobilization_name,
                     c.id community_id, 
                     c."name" community_name, 
-                    c.mailchimp_api_key , 
-                    c.mailchimp_list_id,
+                    '' mailchimp_api_key , 
+                    '' mailchimp_list_id,
                     t.id,
                     t.created_at,
                     t.${table.action_fields} action_fields,

@@ -42,8 +42,8 @@ app.post('/status-resync-mailchimp', async (req, res) => {
         const status = await statusResyncMailchimpHandle(posfix);
         return res.json(status);
        
-    } catch(err){
-        return res.status(500).json(`${err}`);
+    } catch(err: any){
+        return res.status(err.body.status).json(`${err}`);
     }   
 });
 

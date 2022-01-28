@@ -33,13 +33,14 @@ export async function startResyncMailchimp() {
             //update contact on elasticsearch
             const upContact = {
               ...job.data.contact, 
-              status,
+              status: status,
               finished_at: new Date()
             };
+
             const posfix = job.id.toString().indexOf('COMMUNITY') !== -1?`community-${upContact.community_id}`
               :`widget-${upContact.widget_id}`; 
             clientES.index({
-              index: `contact-mailchimp-${posfix}`,
+              index: `resync-mailchimp-${posfix}`,
               method: "PUT",
               id: job.id.toString(),
               body: upContact
