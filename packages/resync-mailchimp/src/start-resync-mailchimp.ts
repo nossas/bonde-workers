@@ -151,7 +151,9 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
                                         index,
                                         method: "POST",
                                         id: prefix + contact.widget_id + 'ID' + contact.id,
-                                        body: contact
+                                        body: {
+                                            ...contact,
+                                            action_fields: JSON.stringify(data.action_fields)}
                                     });
                                     
                                     return await queueContacts.add({ contact }, {
