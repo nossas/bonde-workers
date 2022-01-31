@@ -5,7 +5,7 @@ export const statusResyncMailchimpHandle = async (posfix: string) => {
     let counters = { completed : 0, waiting: 0, failed: 0, active: 0 } ; 
     const max_finished_at = await clientES
     .search({
-        index: `resync-mailchimp-teste-${posfix}`,
+        index: `resync-mailchimp-${posfix}`,
         body: 
           {
             "aggs": {
@@ -21,7 +21,7 @@ export const statusResyncMailchimpHandle = async (posfix: string) => {
       
       let { body } = await clientES.sql.query({
         body: {
-          query: `SELECT status, count(*) total FROM \"resync-mailchimp-teste-${posfix}\" group by status`
+          query: `SELECT status, count(*) total FROM \"resync-mailchimp-${posfix}\" group by status`
         }
       })  
 
