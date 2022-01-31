@@ -34,6 +34,7 @@ export async function startResyncMailchimp() {
             const upContact = {
               ...job.data.contact, 
               status: status,
+              action_fields: JSON.stringify(job.data.action_fields),
               finished_at: new Date()
             };
 
