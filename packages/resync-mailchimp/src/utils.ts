@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import Queue from "bull";
-import { MergeFields } from "./types";
+import { Contact, MergeFields } from "./types";
+
 const url = require('url');
 
 export const dbPool = async () => {
@@ -167,4 +168,3 @@ export const findMergeFields = (kind: string, action_fields: any) => {
 
     return mergeFields;
 }
-
