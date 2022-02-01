@@ -15,7 +15,10 @@ export type Contact = {
     mailchimp_api_key: string,
     mailchimp_list_id: string, 
     action_fields: string,
-    table: string
+    table: string,
+    status?: string,
+    added_at?: Date,
+    finished_at?: Date
 }
 
 export type Tag = {
