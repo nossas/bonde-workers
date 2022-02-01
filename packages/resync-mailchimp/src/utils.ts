@@ -142,7 +142,6 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                 mergeFields.state = preparedCustomer.address.state;
                 mergeFields.city = preparedCustomer.address.city;
                 mergeFields.phone = preparedCustomer.phone.ddd + preparedCustomer.phone.number;
-                console.log(JSON.stringify(preparedCustomer));
                 break;
             }
 

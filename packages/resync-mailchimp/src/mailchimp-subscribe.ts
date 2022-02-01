@@ -36,11 +36,12 @@ export default async (contact: Contact): Promise<any> => {
     const listID = mailchimp_list_id;
     const path = `/lists/${listID}/members/${hash(contact.email)}`;
     
+    //search fields from actions 
+     const mergeFields = findMergeFields(contact.kind, contact.action_fields);
+        
     //search fields
     if (!contact.first_name || !contact.last_name) {   
-        //search fields from actions 
-        const mergeFields = findMergeFields(contact.kind, contact.action_fields);
-        
+       
         //search fields from mailchimp
         if (!mergeFields.first_name || !mergeFields.last_name) {
             
@@ -65,17 +66,20 @@ export default async (contact: Contact): Promise<any> => {
             "LNAME": contact.last_name
         }
     }
- 
-   if (contact.city) {
-        body.merge_fields['CITY'] = contact.city;
-    }
-    if (contact.phone) {
-        body.merge_fields['PHONE'] = contact.phone;
-    }
-    if (contact.state) {
-        body.merge_fields['STATE'] = contact.state;
-    }
 
+   const city = contact.city || mergeFields.city;
+   const phone = contact.phone|| mergeFields.phone;
+   const state = contact.state|| mergeFields.state;    
+   if (city) {
+        body.merge_fields['CITY'] = city;
+    }
+    if (phone) {
+        body.merge_fields['PHONE'] = phone;
+    }
+    if (state) {
+        body.merge_fields['STATE'] = state;
+    }
+   
     // Create or Update Member
     const response = await client.put({ path, body });
     // Add tags
