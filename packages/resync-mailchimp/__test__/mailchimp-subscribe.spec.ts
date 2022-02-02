@@ -160,8 +160,11 @@ describe('mailchimp function tests', () => {
                 email_address: contact.email,
                 status: "subscribed",
                 merge_fields: {
+                    CITY: "Cidade",
                     FNAME: "Nome",
-                    LNAME: "Sobrenome"
+                    LNAME: "Sobrenome",
+                    PHONE: "999999999999",
+                    STATE: "AC",
                 }
             }
         };
