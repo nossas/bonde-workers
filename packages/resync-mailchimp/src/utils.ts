@@ -42,6 +42,44 @@ export const actionTable = (kind: string) => {
     }
 }
 
+const extractState = (value: string) => {
+    const states = {
+      "acre": "ac",
+      "alagoas": "al",
+      "amapá": "ap",
+      "pernambuco": "pe",
+      "amazonas": "am",
+      "paraíba": "pb",
+      "bahia": "ba",
+      "ceará": "ce",
+      "distrito federal": "df",
+      "espírito santo": "es",
+      "goiás": "go",
+      "mato grosso": "mt",
+      "mato grosso do sul": "ms",
+      "roraima": "rr",
+      "maranhão": "ma",
+      "minas gerais": "mg",
+      "paraná": "pr",
+      "piauí": "pi",
+      "rio de janeiro": "rj",
+      "rio grande do norte": "rn",
+      "rio grande do sul": "rs",
+      "rondônia": "ro",
+      "santa catarina": "sc",
+      "são paulo": "sp",
+      "sergipe": "se",
+      "tocantins": "to",
+      "pará": "pa",
+    };
+    for (const [name, uf] of Object.entries(states)) {
+        // console.log(`${name}: ${uf}`);
+        if (value.toLocaleLowerCase().indexOf(uf) >= 0 || value.toLocaleLowerCase().indexOf(name) >= 0) {
+          return uf;
+        }
+      }
+    };
+
 export const findMergeFields = (kind: string, action_fields: any) => {
 
     let mergeFields: MergeFields = {
@@ -68,8 +106,20 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                 for (const [key, value] of Object.entries(preparedFields)) {
                     if (re.test(String(value).toLowerCase())) {
                         mergeFields.email = value;
+        
                     } else if (key.indexOf("nome") >= 0) {
                         (key.indexOf("sobrenome") < 0) ? mergeFields.first_name = value : mergeFields.last_name = value;
+                   
+                    } else if (key.indexOf('telefone') >= 0 || key.indexOf('phone') >= 0 || 
+                               key.indexOf('celular') >= 0 || key.indexOf('whatsapp') >= 0 ||
+                               key.indexOf('fone') >= 0 ){
+                        mergeFields.phone = value;
+                                
+                    } else if (key.indexOf("estado") >= 0 || key.indexOf("uf") >= 0 || key.indexOf("state") >= 0){
+                        mergeFields.state = extractState(value)?.toUpperCase();
+                   
+                    } else if (key.indexOf("cidade") >= 0 || key.indexOf("city") >= 0){
+                        mergeFields.city = value;
                     }
                 }
                 break;
@@ -89,6 +139,9 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                     mergeFields.last_name = " ";
                 }
                 mergeFields.email = preparedCustomer.email;
+                mergeFields.state = preparedCustomer.address.state;
+                mergeFields.city = preparedCustomer.address.city;
+                mergeFields.phone = preparedCustomer.phone.ddd + preparedCustomer.phone.number;
                 break;
             }
 
@@ -96,6 +149,8 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                 mergeFields.first_name = action_fields.name;
                 mergeFields.last_name = action_fields.lastname;
                 mergeFields.email = action_fields.email;
+                mergeFields.city = action_fields.city;
+                mergeFields.state = action_fields.state;
                 break;
             }
 
@@ -103,6 +158,8 @@ export const findMergeFields = (kind: string, action_fields: any) => {
                 mergeFields.first_name = action_fields.name;
                 mergeFields.last_name = action_fields.lastname;
                 mergeFields.email = action_fields.email;
+                mergeFields.city = action_fields.city;
+                mergeFields.state = action_fields.state;
                 break;
             }
         }

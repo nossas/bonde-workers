@@ -38,12 +38,16 @@ export type TagFields = {
 export type MergeFields = {
     first_name: string,
     last_name: string,
-    email: string
+    email: string,
+    phone?: string,
+    city?: string,
+    state?: string,
+    
 }
 
 export type Table = {
-    name: string,
-    action_fields: string,
-    kind: string
+  name: string,
+  action_fields: string,
+  kind: string
 
 }
