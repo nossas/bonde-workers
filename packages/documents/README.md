@@ -13,12 +13,12 @@ CLI to automate process os update cert configuration at rancher cluster
 ## Requirements
 
 - Node JS v14
-- Redis
+- Pnpm 6
 
-`npm i`
+`pnpm i`
 
 Populate with real values configs `.env`
 
 ## Usage
 
-`npm start certs`
+`pnpm m run start --filter documents certs`

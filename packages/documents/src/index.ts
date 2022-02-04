@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import * as db from './db';
 import crypto from 'crypto';
-import { queue } from './queue';
-import { main as mainCerts} from './certs';
-import {makeCommad as makeCleanCommad} from './clean';
+// import { queue } from './queue';
+import { main as mainCerts } from './certs';
+import { makeCommad as makeCleanCommad } from './clean';
 
 
 const communityId = '9';
@@ -18,68 +18,68 @@ const syncs = program.command('syncs');
 // syncs
 //   .option('-c, --community-id <value>', 'Id da comunidade a ser contextualizada', "8")
 
-syncs
-  .command('form')
-  .action(async () => {
-    // console.log(utility, args, options);
-    await db.check();
-    const Model = db.model();
+// syncs
+//   .command('form')
+//   .action(async () => {
+//     // console.log(utility, args, options);
+//     await db.check();
+//     const Model = db.model();
 
-    const formEntries = await db.getActions(communityId, 'form', Model.FormEntry, Model)
-    console.log(`There are ${(formEntries.count)} form entries`);
+//     const formEntries = await db.getActions(communityId, 'form', Model.FormEntry, Model)
+//     console.log(`There are ${(formEntries.count)} form entries`);
 
-    formEntries.rows.forEach((c: any) => {
-      c.mobilizations.forEach((m: any) => {
-        m.blocks.forEach((b: any) => {
-          b.widgets.forEach((w: any) => {
-            w.form_entries.forEach((fe: any) => {
-              const preparedFields: any = []
-              JSON.parse(fe.fields).forEach((field:any) => {
-                preparedFields['form_' + field.label.toLowerCase().replace(/ /g,'-').replace(/[^\w-]+/g,'')] = (field.value !== undefined) ? field.value.toLowerCase() : "";
-              });
-              var md5sum = crypto.createHash('md5');
-              md5sum.update(''+c.id + m.id + w.id + fe.id);
-              const job = queue.createJob(({
-                id: md5sum.digest('hex'),
-                community_id: c.id,
-                community_name: c.name,
-                mobilization_id: m.id,
-                mobilization_name: m.name,
-                activist_email: preparedFields.form_email,
-                activist_ip: "",
-                activist_first_name: "",
-                activist_last_name: "",
-                activist_fullname: "",
-                activist_city: "",
-                activist_state: "",
-                activist_phone: "",
-                widget_id: w.id,
-                action_id: fe.id,
-                action_type: "form",
-                action_data: ''+JSON.stringify(preparedFields),
-                action_created: new Date(fe.createdAt),
-                donation_value: "",
-                donation_recurring: "",
-                donation_status: "",
-                pressure_targets_count: "",
-                ...preparedFields,
-              }));
+//     formEntries.rows.forEach((c: any) => {
+//       c.mobilizations.forEach((m: any) => {
+//         m.blocks.forEach((b: any) => {
+//           b.widgets.forEach((w: any) => {
+//             w.form_entries.forEach((fe: any) => {
+//               const preparedFields: any = []
+//               JSON.parse(fe.fields).forEach((field:any) => {
+//                 preparedFields['form_' + field.label.toLowerCase().replace(/ /g,'-').replace(/[^\w-]+/g,'')] = (field.value !== undefined) ? field.value.toLowerCase() : "";
+//               });
+//               var md5sum = crypto.createHash('md5');
+//               md5sum.update(''+c.id + m.id + w.id + fe.id);
+//               const job = queue.createJob(({
+//                 id: md5sum.digest('hex'),
+//                 community_id: c.id,
+//                 community_name: c.name,
+//                 mobilization_id: m.id,
+//                 mobilization_name: m.name,
+//                 activist_email: preparedFields.form_email,
+//                 activist_ip: "",
+//                 activist_first_name: "",
+//                 activist_last_name: "",
+//                 activist_fullname: "",
+//                 activist_city: "",
+//                 activist_state: "",
+//                 activist_phone: "",
+//                 widget_id: w.id,
+//                 action_id: fe.id,
+//                 action_type: "form",
+//                 action_data: ''+JSON.stringify(preparedFields),
+//                 action_created: new Date(fe.createdAt),
+//                 donation_value: "",
+//                 donation_recurring: "",
+//                 donation_status: "",
+//                 pressure_targets_count: "",
+//                 ...preparedFields,
+//               }));
 
-              job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
-              });
+//               job.on('succeeded', (result: any) => {
+//                 console.log(`Received result for job ${job.id}:` ,result);
+//               });
 
-              job.save();
-            });
-          });
-        });
-      });
-    });
-  });
-;
+//               job.save();
+//             });
+//           });
+//         });
+//       });
+//     });
+//   });
+// ;
 syncs
   .command('pressure')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
 
     const pressures = await db.getActions(communityId, 'pressure', Model.PressureByEmail, Model)
@@ -118,7 +118,7 @@ syncs
               job.save();
 
               job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
+                console.log(`Received result for job ${job.id}:`, result);
               });
 
             });
@@ -130,7 +130,7 @@ syncs
 ;
 syncs
   .command('phone-pressure')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
     const pressuresPhone = await db.getActions(communityId, 'pressure-phone', Model.PressureByPhone, Model)
     console.log(`There are ${(pressuresPhone.count)} pressures phone`);
@@ -138,7 +138,7 @@ syncs
 ;
 syncs
   .command('donation')
-  .action(async() => {
+  .action(async () => {
     const Model = db.model();
     const donations = await db.getActions(communityId, 'donation', Model.Donation, Model)
     console.log(`There are ${(donations.count)} donations`);
@@ -150,7 +150,7 @@ syncs
             w.donations.map((d: any) => {
               // console.log(p);
               var md5sum = crypto.createHash('md5');
-              md5sum.update(''+c.id + m.d + w.id + d.id);
+              md5sum.update('' + c.id + m.d + w.id + d.id);
               const job = queue.createJob(({
                 id: md5sum.digest('hex'),
                 community_id: c.id,
@@ -178,7 +178,7 @@ syncs
               job.save();
 
               job.on('succeeded', (result: any) => {
-                console.log(`Received result for job ${job.id}:` ,result);
+                console.log(`Received result for job ${job.id}:`, result);
               });
 
             });
@@ -213,6 +213,6 @@ function makeHeatCommand() {
 }
 program.addCommand(makeHeatCommand());
 
-program.addCommand(makeCleanCommad()); 
+program.addCommand(makeCleanCommad());
 
 program.parse(process.argv);
