@@ -1,11 +1,13 @@
-import { clientES } from "./client-elasticsearch";
+import { clientES, nameIndex } from "./client-elasticsearch";
 import  { format } from "date-fns";
 
 export const statusResyncMailchimpHandle = async (posfix: string) => {
     let counters = { completed : 0, waiting: 0, failed: 0, active: 0 } ; 
+    const index = `${nameIndex}-${posfix}`
+    console.log(index)
     const max_finished_at = await clientES
     .search({
-        index: `resync-mailchimp-${posfix}`,
+        index,
         body: 
           {
             "aggs": {
@@ -21,7 +23,7 @@ export const statusResyncMailchimpHandle = async (posfix: string) => {
       
       let { body } = await clientES.sql.query({
         body: {
-          query: `SELECT status, count(*) total FROM \"resync-mailchimp-${posfix}\" group by status`
+          query: `SELECT status, count(*) total FROM \"${index}\" group by status`
         }
       })  
 

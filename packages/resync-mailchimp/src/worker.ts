@@ -2,7 +2,7 @@ import log, { apmAgent } from "./dbg";
 import mailchimp from "./mailchimp-subscribe";
 import { queueContacts, dbPool } from "./utils";
 import dotenv from "dotenv";
-import { clientES } from "./client-elasticsearch";
+import { clientES, nameIndex } from "./client-elasticsearch";
 
 dotenv.config();
 
@@ -41,7 +41,7 @@ export async function startResyncMailchimp() {
             const posfix = job.id.toString().indexOf('COMMUNITY') !== -1?`community-${upContact.community_id}`
               :`widget-${upContact.widget_id}`; 
             clientES.index({
-              index: `resync-mailchimp-${posfix}`,
+              index: `${nameIndex}-${posfix}`,
               method: "PUT",
               id: job.id.toString(),
               body: upContact

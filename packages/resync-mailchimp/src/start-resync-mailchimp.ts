@@ -4,7 +4,7 @@ import { queueContacts, actionTable, dbPool } from "./utils";
 import { Pool, PoolClient } from "pg";
 import log, { apmAgent } from "./dbg";
 import { Table,Contact } from "./types";
-import { clientES } from "./client-elasticsearch";
+import { clientES, nameIndex} from "./client-elasticsearch";
 const JSONStream = require('JSONStream');
 
 /**
@@ -59,12 +59,12 @@ export async function startResyncMailchimpHandle(id: number, is_community: boole
             if(is_community){
                 condition  =  `c.id = ${id}`;
                 prefix = `COMMUNITY${id}WIDGET`; 
-                index =`resync-mailchimp-community-${id}`;
+                index =`${nameIndex}-community-${id}`;
     
             }else{
                 condition =  `w.id = ${id}`;
                 prefix = `WIDGET`; 
-                index = `resync-mailchimp-widget-${id}`; 
+                index = `${nameIndex}-widget-${id}`; 
             }
            
             const query = new QueryStream(`select 
