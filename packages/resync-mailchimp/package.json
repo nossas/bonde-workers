@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
     "dev-worker": "ts-node-dev src/worker.ts",
-    "fake-worker": "ts-node-dev src/fake-worker.ts",
     "dev-clean": "ts-node-dev src/clean.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",

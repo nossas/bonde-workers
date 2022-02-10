@@ -10,8 +10,7 @@ export const clientES =
     auth: {
       username: "elastic",
       password: process.env.ELASTICSEARCH_PASSWORD || 'changeme'
-    },
-    context: process.env.NODE_ENV || 'development'
+    }
   });
 
-  export const nameIndex = process.env.NODE_ENV === 'development'? `resync-mailchimp-dev`:`resync-mailchimp`;
+  export const nameIndex = process.env.NODE_ENV === 'production'? `resync-mailchimp`:`resync-mailchimp-dev`;
