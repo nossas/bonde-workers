@@ -43,7 +43,27 @@ app.post('/status-resync-mailchimp', async (req, res) => {
         return res.json(status);
        
     } catch(err: any){
-        return res.status(err.body.status).json(`${err}`);
+       
+        //index de ressincronização não foi criado 
+        if(err.body.status = 404){
+          return res.json({
+            status: "Parada",
+            last_sync:  "",
+            completed : 0,
+            waiting: 0, 
+            failed: 0, 
+            active: 0
+          });        
+        }
+
+        return res.status(err.body.status).json({
+          status: `${err}`,
+          last_sync:  "",
+          completed : 0,
+          waiting: 0, 
+          failed: 0, 
+          active: 0
+        });        
     }   
 });
 
