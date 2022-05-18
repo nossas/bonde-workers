@@ -55,7 +55,7 @@ export default async (contact: Contact): Promise<any> => {
             });  
         }
       contact.first_name = contact.first_name || mergeFields.first_name;
-      contact.last_name = contact.last_name || mergeFields.last_name;
+      contact.last_name = contact.last_name || mergeFields.last_name || " ";
     }
 
     const body: any = {
